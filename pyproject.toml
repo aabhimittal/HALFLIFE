@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "halflife"
+version = "0.1.0"
+description = "Measure how long a poisoned memory survives background consolidation in LLM agents."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+claude = ["anthropic"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+halflife = "halflife.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["halflife*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
