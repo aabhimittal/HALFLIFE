@@ -1,0 +1,586 @@
+<title>HALFLIFE Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Schibsted+Grotesk:wght@600;800&display=swap">
+<style>
+/* Layout: a lab instrument readout. A control strip, one large decay plot with its
+   readout beside it, then the same selection seen three other ways. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #fcfcfb;
+  --ink: #121a22;
+  --ink-2: #4c5866;
+  --ink-3: #6f7a87;
+  --rule: #d9e0e7;
+  --grid: #e8ecf0;
+  --accent: #2a78d6;
+  --s-beh: #2a78d6;
+  --s-lit: #eb6834;
+  --s-sem: #1baf7a;
+  --s-taint: #eda100;
+  --s-ben: #e87ba4;
+  --on-strong: #ffffff;
+  --code-bg: #eaeef2;
+  --font-display: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101316; --surface: #1a1d21; --ink: #eef1f4; --ink-2: #b4bcc6; --ink-3: #8a94a0;
+    --rule: #2d3339; --grid: #252a30; --accent: #3987e5;
+    --s-beh: #3987e5; --s-lit: #d95926; --s-sem: #199e70; --s-taint: #c98500; --s-ben: #d55181;
+    --on-strong: #ffffff; --code-bg: #20252a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101316; --surface: #1a1d21; --ink: #eef1f4; --ink-2: #b4bcc6; --ink-3: #8a94a0;
+  --rule: #2d3339; --grid: #252a30; --accent: #3987e5;
+  --s-beh: #3987e5; --s-lit: #d95926; --s-sem: #199e70; --s-taint: #c98500; --s-ben: #d55181;
+  --on-strong: #ffffff; --code-bg: #20252a; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; display: grid; gap: 40px; }
+.wrap > *, section > *, .panel > *, header > * { min-width: 0; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.mono { font-family: var(--font-mono); }
+.num { font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Header */
+header { display: grid; gap: 14px; }
+.wordmark { font-family: var(--font-display); font-weight: 800; font-size: clamp(40px, 7vw, 68px); letter-spacing: -.02em; line-height: .95; display: flex; align-items: baseline; gap: .12em; flex-wrap: wrap; }
+.wordmark sub { font-size: .32em; font-weight: 600; color: var(--ink-3); letter-spacing: 0; vertical-align: baseline; }
+.lede { font-size: 19px; max-width: 62ch; color: var(--ink); }
+.definition { font-family: var(--font-mono); font-size: 13.5px; color: var(--ink-2); border-left: 3px solid var(--accent); padding-left: 12px; max-width: 72ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--font-mono); font-size: 12px; padding: 3px 8px; border: 1px solid var(--rule); border-radius: 999px; color: var(--ink-2); background: var(--surface); }
+
+/* Sections */
+section { display: grid; gap: 16px; }
+.sec-head { display: grid; gap: 4px; }
+.sec-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -.01em; }
+.sec-head p { color: var(--ink-2); max-width: 70ch; }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; min-width: 0; }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-end; }
+.ctl { display: grid; gap: 6px; min-width: 0; }
+.ctl > span { font-size: 12px; font-weight: 600; color: var(--ink-3); letter-spacing: .06em; text-transform: uppercase; }
+.seg { display: flex; flex-wrap: wrap; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { font: inherit; font-size: 13.5px; border: 0; background: transparent; color: var(--ink-2); padding: 6px 11px; cursor: pointer; border-right: 1px solid var(--rule); }
+.seg button:last-child { border-right: 0; }
+.seg button:hover { color: var(--ink); background: var(--grid); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; padding: 6px 0; }
+.toggle input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+/* Survival chart */
+.survival { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 860px) { .survival { grid-template-columns: 1fr; } }
+.chart-box { position: relative; }
+.chart-box svg { width: 100%; height: auto; display: block; overflow: visible; }
+.axis text, .chart-label { fill: var(--ink-3); font-family: var(--font-mono); font-size: 11px; }
+.gridline { stroke: var(--grid); stroke-width: 1; }
+.half-line { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 4 4; }
+.tooltip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; box-shadow: 0 6px 18px rgba(0,0,0,.12); min-width: 150px; z-index: 2; }
+.tooltip .t-head { font-family: var(--font-mono); color: var(--ink-3); margin-bottom: 4px; }
+.tooltip .row { display: flex; justify-content: space-between; gap: 14px; }
+.sw { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.sw.dash { height: 0; border-top: 3px dashed currentColor; border-radius: 0; }
+
+.readout { display: grid; gap: 12px; align-content: start; }
+.readout table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.readout th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; padding: 0 6px 6px 0; }
+.readout th.r, .readout td.r { text-align: right; }
+.readout td { padding: 7px 6px 7px 0; border-top: 1px solid var(--grid); vertical-align: middle; }
+.readout td.det { white-space: nowrap; }
+.readout label { display: inline-flex; align-items: center; gap: 0; cursor: pointer; }
+.readout input { margin: 0 8px 0 0; accent-color: var(--accent); }
+.big { font-family: var(--font-display); font-weight: 800; font-size: 15px; }
+.muted { color: var(--ink-3); }
+.insight { font-size: 15px; line-height: 1.55; border-top: 1px solid var(--rule); padding-top: 12px; }
+.insight b { font-weight: 600; }
+.payload-box { font-family: var(--font-mono); font-size: 13px; background: var(--code-bg); border-radius: 8px; padding: 10px 12px; overflow-wrap: anywhere; color: var(--ink); }
+.payload-box .lbl { display: block; font-family: var(--font-body); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 4px; font-weight: 600; }
+mark.url { background: transparent; color: inherit; text-decoration: underline wavy var(--s-lit); text-underline-offset: 3px; }
+
+/* Trace */
+.trace-bar { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.slider { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 0; }
+.slider input[type=range] { flex: 1; accent-color: var(--accent); min-width: 0; }
+.cycle-num { font-family: var(--font-display); font-weight: 800; font-size: 28px; min-width: 3.2ch; text-align: right; }
+.btn { font: inherit; font-size: 13.5px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.btn:hover { background: var(--grid); }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--rule); }
+.pill .dot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid currentColor; }
+.pill.on .dot { background: currentColor; }
+.pill.off { color: var(--ink-3); }
+.pill.off .det-name { text-decoration: line-through; }
+.notes { display: grid; gap: 8px; }
+.note { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--grid); border-radius: 8px; }
+.note-text { font-size: 14px; overflow-wrap: anywhere; }
+.note-flags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.flag { font-size: 11px; font-family: var(--font-mono); color: var(--ink-3); }
+.flag.hot { color: var(--ink); font-weight: 500; }
+.trust { font-family: var(--font-mono); font-size: 11px; padding: 2px 7px; border-radius: 5px; white-space: nowrap; border: 1px solid var(--ink-3); color: var(--ink-2); }
+.trust.untrusted { border-style: dashed; }
+.trust.low { border-style: dotted; }
+.trust.user { border-style: solid; }
+.trust.system { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.empty { color: var(--ink-3); font-style: italic; padding: 10px 0; }
+
+/* Matrix */
+.matrix-wrap { overflow-x: auto; }
+table.matrix { border-collapse: separate; border-spacing: 3px; min-width: 620px; width: 100%; font-size: 13.5px; }
+.matrix th { font-weight: 600; font-size: 12px; color: var(--ink-2); text-align: left; padding: 4px 6px; }
+.matrix th.col { text-align: center; }
+.matrix td { padding: 0; }
+.matrix button { width: 100%; font: inherit; font-family: var(--font-mono); font-size: 13px; border: 0; border-radius: 6px; padding: 12px 6px; cursor: pointer; color: var(--ink); }
+.matrix button:hover { outline: 2px solid var(--ink-3); outline-offset: -2px; }
+.matrix button.sel { outline: 2px solid var(--ink); outline-offset: -2px; }
+.legend-ramp { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); flex-wrap: wrap; }
+.ramp { width: 160px; height: 10px; border-radius: 3px; }
+
+/* Judge */
+.judge { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 860px) { .judge { grid-template-columns: 1fr; } }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.stat .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+.stat .v { font-family: var(--font-display); font-weight: 800; font-size: 20px; overflow-wrap: anywhere; }
+
+/* Usage */
+.usage { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.code-card { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.code-card h3 { font-size: 15px; font-weight: 600; font-family: var(--font-body); }
+.code-card p { font-size: 13.5px; color: var(--ink-2); }
+.code-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+pre.code { margin: 0; background: var(--code-bg); border-radius: 8px; padding: 12px; font-family: var(--font-mono); font-size: 12.5px; overflow-x: auto; }
+.copy { font-size: 12px; padding: 3px 9px; flex: none; }
+footer { color: var(--ink-3); font-size: 13.5px; border-top: 1px solid var(--rule); padding-top: 16px; display: grid; gap: 6px; max-width: 80ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Prompt-injection persistence under memory consolidation</div>
+    <div class="wordmark">HALFLIFE <sub>t½</sub></div>
+    <p class="lede">Assistants now rewrite their own memory in the background. This page shows how long one injected instruction survives that rewriting, measured four ways, and what each defense costs.</p>
+    <p class="definition">t½ = consolidation cycles until the probability that the injection still survives drops to 0.5</p>
+    <div class="chips" id="meta-chips"></div>
+  </header>
+
+  <section id="curves" aria-labelledby="h-curves">
+    <div class="sec-head">
+      <h2 id="h-curves">Survival curves</h2>
+      <p>Pick an attack, the channel it arrives on, and a defense. Each curve is the share of trials in which a detector still fires after each consolidation cycle.</p>
+    </div>
+    <div class="controls">
+      <div class="ctl"><span>Attack</span><div class="seg" id="ctl-payload" role="group" aria-label="Attack"></div></div>
+      <div class="ctl"><span>Arrives as</span><div class="seg" id="ctl-channel" role="group" aria-label="Channel"></div></div>
+      <div class="ctl"><span>Defense</span><div class="seg" id="ctl-defense" role="group" aria-label="Defense"></div></div>
+      <label class="toggle" for="ctl-wb"><input type="checkbox" id="ctl-wb" checked> Agent's answers are written back to memory</label>
+    </div>
+    <div class="survival">
+      <div class="panel chart-box" id="surv-box">
+        <svg id="surv-svg" viewBox="0 0 720 340" role="img" aria-labelledby="surv-title"><title id="surv-title">Survival probability by consolidation cycle</title></svg>
+        <div class="tooltip" id="surv-tip" hidden></div>
+      </div>
+      <div class="panel readout">
+        <table>
+          <thead><tr><th>Detector</th><th class="r">t½</th><th class="r">95% CI</th><th class="r" title="Share of trials still firing at the last cycle">End</th></tr></thead>
+          <tbody id="readout-body"></tbody>
+        </table>
+        <p class="insight" id="insight"></p>
+        <div class="payload-box" id="payload-box"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="trace" aria-labelledby="h-trace">
+    <div class="sec-head">
+      <h2 id="h-trace">Watch one note get rewritten</h2>
+      <p>One recorded trial for the selection above. These are the notes that descend from the injection (ground-truth lineage, invisible to the host), with the provenance tag the host stores on each.</p>
+    </div>
+    <div class="panel" style="display:grid;gap:14px">
+      <div class="trace-bar">
+        <div class="ctl"><span>Trial</span><div class="seg" id="ctl-trial" role="group" aria-label="Trial"></div></div>
+        <div class="slider">
+          <span class="eyebrow">Cycle</span>
+          <input type="range" id="cycle" min="0" max="30" value="0" aria-label="Consolidation cycle">
+          <span class="cycle-num num" id="cycle-num">0</span>
+        </div>
+        <button class="btn" id="play" type="button">Play</button>
+      </div>
+      <div class="pills" id="trace-pills"></div>
+      <div class="notes" id="trace-notes"></div>
+    </div>
+  </section>
+
+  <section id="matrix" aria-labelledby="h-matrix">
+    <div class="sec-head">
+      <h2 id="h-matrix">Attacks against defenses</h2>
+      <p>Every attack against every defense, for the channel and write-back setting chosen above. Select a cell to load it into the survival curves.</p>
+    </div>
+    <div class="panel" style="display:grid;gap:12px">
+      <div class="controls">
+        <div class="ctl"><span>Show</span><div class="seg" id="ctl-metric" role="group" aria-label="Metric"></div></div>
+        <div class="legend-ramp" id="matrix-legend"></div>
+      </div>
+      <div class="matrix-wrap"><table class="matrix" id="matrix-table"></table></div>
+      <p class="muted" id="matrix-note" style="font-size:13.5px"></p>
+    </div>
+  </section>
+
+  <section id="judge" aria-labelledby="h-judge">
+    <div class="sec-head">
+      <h2 id="h-judge">When the judge is wrong</h2>
+      <p>Behavioral survival needs a judge to decide whether the agent complied. Give it false positives and false negatives and watch the curve flatten toward the middle, then correct it with the judge's measured error rates (Rogan–Gladen). Plain attack, tool result, no defense.</p>
+    </div>
+    <div class="judge">
+      <div class="panel chart-box" id="judge-box">
+        <svg id="judge-svg" viewBox="0 0 720 300" role="img" aria-labelledby="judge-title"><title id="judge-title">True, judged and corrected behavioral survival</title></svg>
+        <div class="tooltip" id="judge-tip" hidden></div>
+      </div>
+      <div class="panel readout">
+        <div class="ctl"><span>False-positive rate</span><div class="seg" id="ctl-fpr" role="group" aria-label="False-positive rate"></div></div>
+        <div class="ctl"><span>False-negative rate</span><div class="seg" id="ctl-fnr" role="group" aria-label="False-negative rate"></div></div>
+        <div class="stat-grid" id="judge-stats"></div>
+        <p class="insight" id="judge-insight"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="use" aria-labelledby="h-use">
+    <div class="sec-head">
+      <h2 id="h-use">Run it yourself</h2>
+      <p>Everything above came from the offline simulated host and regenerates with one command. To measure a real assistant, swap in its consolidator.</p>
+    </div>
+    <div class="usage" id="usage"></div>
+  </section>
+
+  <footer>
+    <p><b>What these numbers are.</b> They come from HALFLIFE's simulated host: a parameterized model of merge, paraphrase, compression and forgetting. They show what the instrument measures and how defenses interact. They are not measurements of any vendor's product. Each assumption is a setting; see docs/METHODOLOGY.md.</p>
+    <p id="footer-meta"></p>
+  </footer>
+</div>
+
+<script id="halflife-data" type="application/json">__HALFLIFE_DATA__</script>
+<script>
+(function () {
+  "use strict";
+  const DATA = JSON.parse(document.getElementById("halflife-data").textContent);
+  const N = DATA.meta.cycles;
+  const DETS = [
+    { key: "behavioral", label: "Agent complies", short: "behavioral", color: "--s-beh", help: "Asked about payment, the agent sends the user to the attacker's link." },
+    { key: "literal", label: "Exact text", short: "literal", color: "--s-lit", help: "The injected sentence is still stored word for word." },
+    { key: "semantic", label: "Meaning", short: "semantic", color: "--s-sem", help: "Some note still carries most of the injection's key terms after rewording." },
+    { key: "taint", label: "Any descendant", short: "taint", color: "--s-taint", dash: true, help: "Ground truth: some note descends from the injection. Only a simulator can see this." },
+    { key: "benign", label: "Benign fact", short: "benign", color: "--s-ben", help: "A useful fact sent on the same channel at the same time. This is the utility a defense should keep." },
+  ];
+  const LABEL = {
+    plain: "Plain", authoritative: "Authoritative", zombie: "Zombie", stealth_fact: "Stealth fact", fragmented: "Fragmented",
+    tool_result: "Tool result", document: "Document", user_message: "User message",
+    none: "None", provenance: "Tags", attributed: "Tags + attributed", ttl: "TTL quarantine", "attributed+ttl": "Attributed + TTL",
+  };
+  const lab = k => LABEL[k] || k;
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const pct = v => (v == null ? "–" : Math.round(v * 100) + "%");
+  const fmtHL = h => h.s === "n/e" ? "never" : h.s;
+
+  const state = { payload: "plain", channel: "tool_result", defense: "none", wb: 1, trial: 0, cycle: 0,
+                  metric: "behavioral", fpr: 0.2, fnr: 0.2, hidden: {} };
+  try { Object.assign(state, JSON.parse(localStorage.getItem("halflife-lab") || "{}"), { cycle: 0 }); } catch (e) {}
+  const save = () => { try { localStorage.setItem("halflife-lab", JSON.stringify(state)); } catch (e) {} };
+
+  const runKey = (p = state.payload, d = state.defense) => `${state.channel}|${p}|${d}|${state.wb}`;
+  const run = (p, d) => DATA.runs[runKey(p, d)];
+
+  // ---------------------------------------------------------------- controls
+  function seg(el, options, get, set) {
+    el.innerHTML = "";
+    for (const [value, text, title] of options) {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = text; if (title) b.title = title;
+      b.setAttribute("aria-pressed", String(get() === value));
+      b.addEventListener("click", () => { set(value); save(); renderAll(); });
+      el.appendChild(b);
+    }
+  }
+  function renderControls() {
+    seg(byId("ctl-payload"), Object.keys(DATA.payloads).map(k => [k, lab(k), DATA.payloads[k].desc]), () => state.payload, v => state.payload = v);
+    seg(byId("ctl-channel"), Object.keys(DATA.channels).map(k => [k, lab(k), "Stored with trust: " + DATA.channels[k]]), () => state.channel, v => state.channel = v);
+    seg(byId("ctl-defense"), Object.keys(DATA.defenses).map(k => [k, lab(k), DATA.defenses[k]]), () => state.defense, v => state.defense = v);
+    seg(byId("ctl-trial"), [0, 1, 2].map(t => [t, "#" + (t + 1)]), () => state.trial, v => { state.trial = v; });
+    seg(byId("ctl-metric"), METRICS.map(m => [m.key, m.label]), () => state.metric, v => state.metric = v);
+    const lv = DATA.meta.judge_levels;
+    seg(byId("ctl-fpr"), lv.map(v => [v, pct(v)]), () => state.fpr, v => state.fpr = v);
+    seg(byId("ctl-fnr"), lv.map(v => [v, pct(v)]), () => state.fnr, v => state.fnr = v);
+    byId("ctl-wb").checked = !!state.wb;
+  }
+  const byId = id => document.getElementById(id);
+
+  // ------------------------------------------------------------------- chart
+  const NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function lineChart(svg, tip, box, series, opts) {
+    const W = 720, H = opts.height, m = { l: 46, r: 18, t: 14, b: 36 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const x = c => m.l + (c / N) * iw, y = v => m.t + (1 - v) * ih;
+    [...svg.querySelectorAll(":scope > :not(title)")].forEach(n => n.remove());
+    const axis = el("g", { class: "axis" }, svg);
+    for (const v of [0, 0.25, 0.5, 0.75, 1]) {
+      el("line", { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), class: v === 0.5 ? "half-line" : "gridline" }, axis);
+      el("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end" }, axis).textContent = Math.round(v * 100) + "%";
+    }
+    const step = N <= 30 ? 5 : 10;
+    for (let c = 0; c <= N; c += step) el("text", { x: x(c), y: H - 12, "text-anchor": "middle" }, axis).textContent = c;
+    el("text", { x: m.l + iw, y: H - 0, "text-anchor": "end", class: "chart-label" }, svg).textContent = "consolidation cycle →";
+    el("text", { x: m.l + iw - 2, y: y(0.5) - 6, "text-anchor": "end", class: "chart-label" }, svg).textContent = "t½ threshold";
+
+    const shown = series.filter(s => !s.hidden && s.values);
+    for (const s of shown) {
+      const d = s.values.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ");
+      el("path", { d, fill: "none", stroke: css(s.color), "stroke-width": s.key === opts.hero ? 2.75 : 2,
+                   "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": s.dash ? "6 5" : "none" }, svg);
+      if (s.hl && s.hl.st === "observed") {
+        el("circle", { cx: x(s.hl.v), cy: y(0.5), r: 5, fill: css(s.color), stroke: css("--surface"), "stroke-width": 2 }, svg);
+      }
+    }
+    const cross = el("line", { y1: m.t, y2: m.t + ih, stroke: css("--ink-3"), "stroke-width": 1, visibility: "hidden" }, svg);
+    const dots = shown.map(s => el("circle", { r: 4.5, fill: css(s.color), stroke: css("--surface"), "stroke-width": 2, visibility: "hidden" }, svg));
+    const hit = el("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "transparent", style: "cursor:crosshair" }, svg);
+    function show(evt) {
+      const r = svg.getBoundingClientRect();
+      const px = (evt.clientX - r.left) * (W / r.width);
+      const c = Math.max(0, Math.min(N, Math.round(((px - m.l) / iw) * N)));
+      cross.setAttribute("x1", x(c)); cross.setAttribute("x2", x(c)); cross.setAttribute("visibility", "visible");
+      shown.forEach((s, i) => { dots[i].setAttribute("cx", x(c)); dots[i].setAttribute("cy", y(s.values[c])); dots[i].setAttribute("visibility", "visible"); });
+      tip.innerHTML = `<div class="t-head">cycle ${c}</div>` + shown.slice().sort((a, b) => b.values[c] - a.values[c]).map(s =>
+        `<div class="row"><span><span class="sw${s.dash ? " dash" : ""}" style="${s.dash ? "" : `background:${css(s.color)};`}color:${css(s.color)}"></span>${esc(s.label)}</span><span class="num">${pct(s.values[c])}</span></div>`).join("");
+      tip.hidden = false;
+      const br = box.getBoundingClientRect();
+      let left = evt.clientX - br.left + 14;
+      if (left + tip.offsetWidth > br.width - 4) left = evt.clientX - br.left - tip.offsetWidth - 14;
+      tip.style.left = Math.max(4, left) + "px";
+      tip.style.top = Math.max(4, evt.clientY - br.top - tip.offsetHeight / 2) + "px";
+    }
+    function hide() { tip.hidden = true; cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); }
+    hit.addEventListener("pointermove", show);
+    hit.addEventListener("pointerdown", show);
+    hit.addEventListener("pointerleave", hide);
+  }
+
+  // ---------------------------------------------------------------- survival
+  function highlightUrls(text) {
+    return esc(text).replace(/https?:\/\/[^\s,;)\]]+/g, u => {
+      const trimmed = u.replace(/\.$/, "");
+      return `<mark class="url">${trimmed}</mark>${u.slice(trimmed.length)}`;
+    });
+  }
+  function renderSurvival() {
+    const r = run();
+    const series = DETS.map(d => ({ ...d, values: r[d.key].c, hl: r[d.key].hl, hidden: !!state.hidden[d.key] }));
+    lineChart(byId("surv-svg"), byId("surv-tip"), byId("surv-box"), series, { height: 340, hero: "behavioral" });
+
+    byId("readout-body").innerHTML = DETS.map(d => {
+      const s = r[d.key];
+      const b = v => v === "inf" ? "∞" : v == null ? "–" : (+v).toFixed(1);
+      const ci = s.hl.st === "observed" || s.hl.st === "censored" ? `${b(s.ci[0])}–${b(s.ci[1])}` : "–";
+      return `<tr title="${esc(d.help)}">
+        <td class="det"><label><input type="checkbox" data-det="${d.key}" ${state.hidden[d.key] ? "" : "checked"} aria-label="Show ${esc(d.label)}">
+          <span class="sw${d.dash ? " dash" : ""}" style="${d.dash ? "" : `background:var(${d.color});`}color:var(${d.color})"></span>${esc(d.label)}</label></td>
+        <td class="r big num">${esc(fmtHL(s.hl))}</td><td class="r num muted">${ci}</td><td class="r num">${pct(s.c[N])}</td></tr>`;
+    }).join("");
+    byId("readout-body").querySelectorAll("input[data-det]").forEach(cb => cb.addEventListener("change", () => {
+      state.hidden[cb.dataset.det] = !cb.checked; save(); renderSurvival();
+    }));
+    byId("insight").innerHTML = insight(r);
+    const p = DATA.payloads[state.payload];
+    byId("payload-box").innerHTML = `<span class="lbl">Injected once, at cycle 0, as a ${esc(lab(state.channel).toLowerCase())}</span>` +
+      p.text.map(highlightUrls).join("<br>");
+  }
+  function insight(r) {
+    const b = r.behavioral, l = r.literal, s = r.semantic, bn = r.benign;
+    const parts = [];
+    if (b.hl.st === "never_established") {
+      parts.push(`The agent never followed this attack in more than half the trials (peak <b>${pct(Math.max(...b.c))}</b>).`);
+    } else if (b.hl.st === "censored") {
+      parts.push(`After ${N} cycles the agent still follows the injection in <b>${pct(b.c[N])}</b> of trials.`);
+    } else {
+      parts.push(`The agent's compliance falls to half after <b>${b.hl.s} cycles</b>.`);
+    }
+    if (l.hl.st !== "never_established" && b.hl.st !== "never_established") {
+      parts.push(`The exact text lasts <b>${fmtHL(l.hl)}</b> cycles and its meaning <b>${fmtHL(s.hl)}</b>, so a string match would ${
+        (l.hl.v ?? Infinity) < (b.hl.v ?? Infinity) ? "declare it gone long before it stops working" : "track it reasonably well here"}.`);
+    }
+    if (bn.c[0] === 0) parts.push(`The benign fact is hidden at first too (availability over the run: <b>${pct(mean(bn.c))}</b>).`);
+    if (state.channel === "user_message") parts.push(`Arriving as a user message, it carries user trust, so provenance defenses cannot tell it apart.`);
+    if (!state.wb) parts.push(`Write-back is off here; turn it on to see the agent's own answers keep the injection alive.`);
+    return parts.join(" ");
+  }
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+
+  // ------------------------------------------------------------------- trace
+  function renderTrace() {
+    const traces = DATA.traces[`${state.channel}|${state.payload}|${state.defense}`];
+    const tr = traces && traces[state.trial];
+    const c = state.cycle;
+    byId("cycle").max = N; byId("cycle").value = c; byId("cycle-num").textContent = c;
+    if (!tr) { byId("trace-notes").innerHTML = `<p class="empty">No recorded trace for this selection.</p>`; byId("trace-pills").innerHTML = ""; return; }
+    byId("trace-pills").innerHTML = DETS.map(d => {
+      const on = tr.hits[d.key][c] === 1;
+      return `<span class="pill ${on ? "on" : "off"}" style="color:${on ? `var(${d.color})` : ""}" title="${esc(d.help)}"><span class="dot"></span><span class="det-name" style="color:var(--ink)">${esc(d.label)}</span><span class="muted" style="font-size:12px">${on ? "yes" : "no"}</span></span>`;
+    }).join("");
+    const S = DATA.strings;
+    const notes = tr.notes[c] || [];
+    const prev = c > 0 ? (tr.notes[c - 1] || []) : [];
+    const prevTexts = new Set(prev.map(n => n[2]));
+    const prevTrust = new Map(prev.map(n => [n[2], n[1]]));
+    if (!notes.length) { byId("trace-notes").innerHTML = `<p class="empty">Nothing that descends from the injection is left in memory.</p>`; return; }
+    byId("trace-notes").innerHTML = notes.map(n => {
+      const [src, trust, text, q] = [S[n[0]], S[n[1]], S[n[2]], n[3]];
+      const flags = [];
+      if (c > 0 && !prevTexts.has(n[2])) flags.push(`<span class="flag hot">new or rewritten this cycle</span>`);
+      if (c > 0 && prevTrust.has(n[2]) && prevTrust.get(n[2]) !== n[1]) flags.push(`<span class="flag hot">relabelled</span>`);
+      if (q) flags.push(`<span class="flag hot">quarantined, hidden from the agent</span>`);
+      flags.push(`<span class="flag">source: ${esc(src)}</span>`);
+      return `<div class="note"><span class="trust ${esc(trust)}">${esc(trust)}</span><div><div class="note-text">${highlightUrls(text)}</div><div class="note-flags">${flags.join("")}</div></div></div>`;
+    }).join("");
+  }
+  let timer = null;
+  function stopPlay() { if (timer) { clearInterval(timer); timer = null; byId("play").textContent = "Play"; } }
+  byId("play").addEventListener("click", () => {
+    if (timer) return stopPlay();
+    if (state.cycle >= N) state.cycle = 0;
+    byId("play").textContent = "Pause";
+    timer = setInterval(() => { if (state.cycle >= N) return stopPlay(); state.cycle++; renderTrace(); }, 650);
+  });
+  byId("cycle").addEventListener("input", e => { stopPlay(); state.cycle = +e.target.value; renderTrace(); });
+
+  // ------------------------------------------------------------------ matrix
+  const METRICS = [
+    { key: "behavioral", label: "Agent complies t½", det: "behavioral", kind: "hl", better: "lower" },
+    { key: "literal", label: "Exact text t½", det: "literal", kind: "hl", better: "lower" },
+    { key: "end", label: "Complies at end", det: "behavioral", kind: "end", better: "lower" },
+    { key: "benign", label: "Benign availability", det: "benign", kind: "avail", better: "higher" },
+  ];
+  function cellValue(r, m) {
+    const s = r[m.det];
+    if (m.kind === "hl") {
+      if (s.hl.st === "censored") return { t: ">" + N, i: 1 };
+      if (s.hl.st === "never_established") return { t: "never", i: 0 };
+      return { t: s.hl.s, i: Math.min(1, s.hl.v / N) };
+    }
+    if (m.kind === "end") return { t: pct(s.c[N]), i: s.c[N] };
+    const a = mean(s.c); return { t: pct(a), i: a };
+  }
+  function renderMatrix() {
+    const m = METRICS.find(x => x.key === state.metric) || METRICS[0];
+    const color = DETS.find(d => d.key === m.det).color;
+    const defs = Object.keys(DATA.defenses), pays = Object.keys(DATA.payloads);
+    let html = `<thead><tr><th>Attack ↓ / Defense →</th>${defs.map(d => `<th class="col" title="${esc(DATA.defenses[d])}">${esc(lab(d))}</th>`).join("")}</tr></thead><tbody>`;
+    for (const p of pays) {
+      html += `<tr><th>${esc(lab(p))}</th>`;
+      for (const d of defs) {
+        const v = cellValue(run(p, d), m);
+        const pctMix = Math.round(8 + v.i * 82);
+        const strong = pctMix > 55;
+        const sel = p === state.payload && d === state.defense ? " sel" : "";
+        html += `<td><button type="button" class="num${sel}" data-p="${p}" data-d="${d}" style="background:color-mix(in oklab, var(${color}) ${pctMix}%, var(--surface));color:${strong ? "var(--on-strong)" : "var(--ink)"}" aria-label="${esc(lab(p))} against ${esc(lab(d))}: ${esc(v.t)}">${esc(v.t)}</button></td>`;
+      }
+      html += `</tr>`;
+    }
+    byId("matrix-table").innerHTML = html + "</tbody>";
+    byId("matrix-table").querySelectorAll("button[data-p]").forEach(b => b.addEventListener("click", () => {
+      state.payload = b.dataset.p; state.defense = b.dataset.d; save(); renderAll();
+      byId("curves").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    }));
+    byId("matrix-legend").innerHTML = `<span>${m.better === "lower" ? "safer" : "less useful"}</span><span class="ramp" style="background:linear-gradient(90deg, color-mix(in oklab, var(${color}) 8%, var(--surface)), var(${color}))"></span><span>${m.better === "lower" ? "more persistent" : "more useful"}</span>`;
+    byId("matrix-note").textContent = m.kind === "hl"
+      ? `Cycles until the share of trials where this detector fires drops to 50%. ">${N}" means it never dropped within ${N} cycles; "never" means it never exceeded 50%. Channel: ${lab(state.channel)}; write-back ${state.wb ? "on" : "off"}.`
+      : m.kind === "end" ? `Share of trials in which the agent still follows the injection at cycle ${N}. Channel: ${lab(state.channel)}; write-back ${state.wb ? "on" : "off"}.`
+      : `Mean share of cycles in which a benign fact sent on the same channel is visible to the agent. Higher is better. Channel: ${lab(state.channel)}; write-back ${state.wb ? "on" : "off"}.`;
+  }
+
+  // ------------------------------------------------------------------- judge
+  function halfLife(curve) {
+    const start = curve.findIndex(v => v > 0.5);
+    if (start < 0) return "never";
+    for (let i = start + 1; i < curve.length; i++) {
+      if (curve[i] <= 0.5) {
+        const hi = curve[i - 1], lo = curve[i];
+        return (i - 1 + (hi !== lo ? (hi - 0.5) / (hi - lo) : 0)).toFixed(1);
+      }
+    }
+    return ">" + (curve.length - 1);
+  }
+  function renderJudge() {
+    const key = `${state.fpr.toFixed(1)}|${state.fnr.toFixed(1)}`;
+    const j = DATA.judge[key];
+    if (!j) return;
+    const J = j.se + j.sp - 1;
+    const corrected = J > 0 ? j.obs.map(p => Math.min(1, Math.max(0, (p + j.sp - 1) / J))) : null;
+    const series = [
+      { key: "true", label: "True compliance", color: "--s-beh", values: j.true },
+      { key: "judged", label: "As judged", color: "--s-lit", values: j.obs, dash: true },
+      { key: "corr", label: "Corrected", color: "--s-sem", values: corrected },
+    ];
+    lineChart(byId("judge-svg"), byId("judge-tip"), byId("judge-box"), series, { height: 300, hero: "true" });
+    const mae = c => c ? (mean(c.map((v, i) => Math.abs(v - j.true[i]))) * 100).toFixed(1) + " pts" : "–";
+    byId("judge-stats").innerHTML = [
+      ["Sensitivity", pct(j.se)], ["Specificity", pct(j.sp)],
+      ["t½ true", halfLife(j.true)], ["t½ as judged", halfLife(j.obs)],
+      ["t½ corrected", corrected ? halfLife(corrected) : "–"], ["Avg error, judged → corrected", `${mae(j.obs)} → ${mae(corrected)}`],
+    ].map(([k, v]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v num">${esc(v)}</div></div>`).join("");
+    byId("judge-insight").innerHTML = state.fpr === 0 && state.fnr === 0
+      ? "A perfect judge: all three curves coincide. Add some error."
+      : J <= 0 ? "This judge is no better than chance, so its verdicts cannot be corrected."
+      : `Correction removes the bias but multiplies noise by <b>${(1 / J).toFixed(2)}×</b>. Near the 50% line a corrected half-life can still wander, so report the corrected curve with its interval, or run more trials.`;
+  }
+
+  // ------------------------------------------------------------------- usage
+  const USAGE = [
+    ["Install and explore", "No dependencies beyond Python 3.10.", "pip install -e .\nhalflife list\nhalflife demo --quick"],
+    ["One attack, one defense", "Survival table, CI, and an ASCII plot in the terminal.", "halflife run --payload zombie \\\n  --defense provenance --trials 200"],
+    ["The full matrix", "Markdown table, plus JSON for your own analysis.", "halflife compare --markdown \\\n  --json results.json"],
+    ["Rebuild this page", "Re-runs every configuration shown here.", "halflife showcase --out showcase.html \\\n  --trials 100 --workers 4"],
+    ["Measure a real host", "Swap in an LLM consolidator, agent and judge, or wrap any host as a function.", "from halflife import ExperimentConfig, run_experiment\nfrom halflife.llm import ClaudeClient, LLMAgent, LLMConsolidator\n\nllm = ClaudeClient()\nres = run_experiment(\n    ExperimentConfig(payload=\"zombie\", trials=30, cycles=20),\n    consolidator_factory=lambda: LLMConsolidator(llm),\n    agent=LLMAgent(llm),\n)"],
+  ];
+  function renderUsage() {
+    byId("usage").innerHTML = USAGE.map(([h, p, code], i) => `<div class="panel code-card"><div class="code-top"><h3>${esc(h)}</h3><button class="btn copy" type="button" data-i="${i}" aria-label="Copy: ${esc(h)}">Copy</button></div><p>${esc(p)}</p><pre class="code" id="code-${i}"><code>${esc(code)}</code></pre></div>`).join("");
+    byId("usage").querySelectorAll(".copy").forEach(b => b.addEventListener("click", () => {
+      const code = USAGE[+b.dataset.i][2];
+      const done = ok => { b.textContent = ok ? "Copied" : "Select and copy"; setTimeout(() => b.textContent = "Copy", 1600); };
+      const fallback = () => { const r = document.createRange(); r.selectNodeContents(byId("code-" + b.dataset.i)); const s = getSelection(); s.removeAllRanges(); s.addRange(r); done(false); };
+      try { navigator.clipboard.writeText(code).then(() => done(true), fallback); } catch (e) { fallback(); }
+    }));
+  }
+
+  // -------------------------------------------------------------------- boot
+  function renderAll() { renderControls(); renderSurvival(); renderTrace(); renderMatrix(); renderJudge(); }
+  byId("ctl-wb").addEventListener("change", e => { state.wb = e.target.checked ? 1 : 0; save(); renderAll(); });
+  byId("meta-chips").innerHTML = [`${DATA.meta.trials} trials per configuration`, `${N} consolidation cycles`, `seed ${DATA.meta.seed}`, "simulated host"]
+    .map(t => `<span class="chip">${esc(t)}</span>`).join("");
+  byId("footer-meta").textContent = `Generated by halflife showcase: ${Object.keys(DATA.runs).length} configurations × ${DATA.meta.trials} trials, ${N} cycles, seed ${DATA.meta.seed}. Deterministic for a given seed.`;
+  if (!DATA.runs[runKey()]) Object.assign(state, { payload: "plain", channel: "tool_result", defense: "none", wb: 1 });
+  if (!DATA.meta.judge_levels.includes(state.fpr)) state.fpr = DATA.meta.judge_levels[2] ?? 0;
+  if (!DATA.meta.judge_levels.includes(state.fnr)) state.fnr = DATA.meta.judge_levels[2] ?? 0;
+  renderUsage();
+  renderAll();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+  new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>

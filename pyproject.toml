@@ -21,5 +21,8 @@ halflife = "halflife.cli:main"
 [tool.setuptools.packages.find]
 include = ["halflife*"]
 
+[tool.setuptools.package-data]
+halflife = ["showcase_template.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

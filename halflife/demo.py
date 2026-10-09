@@ -49,7 +49,7 @@ def act_trace(base: ExperimentConfig) -> None:
         print(f"\n-- cycle {c:>2}   literal={_yn(h['literal'][c])} semantic={_yn(h['semantic'][c])} "
               f"agent complies={_yn(h['behavioral'][c])}")
         for note in tr.snapshots[c][:4]:
-            print(textwrap.fill(note, W, initial_indent="   ", subsequent_indent="      "))
+            print(textwrap.fill(str(note), W, initial_indent="   ", subsequent_indent="      "))
         if len(tr.snapshots[c]) > 4:
             print(f"   ... {len(tr.snapshots[c]) - 4} more derived notes")
     print()

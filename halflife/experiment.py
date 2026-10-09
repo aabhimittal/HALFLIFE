@@ -80,13 +80,25 @@ class ExperimentConfig:
             raise ValueError(f"unknown consolidator parameters: {sorted(unknown)}")
 
 
+@dataclass(frozen=True)
+class NoteSnapshot:
+    """One note descended from the injection, as the host stores it at some cycle."""
+    source: str
+    trust: str
+    text: str
+    quarantined: bool = False
+
+    def __str__(self) -> str:
+        return f"[src={self.source} trust={self.trust}] {self.text}" + (" [quarantined]" if self.quarantined else "")
+
+
 @dataclass
 class TrialTrace:
     """Per-cycle detector outcomes plus (optionally) snapshots of the poisoned notes."""
     hits: dict[str, list[bool]]
     behavioral_raw: list[float]      # fraction of probes the judge flagged
     behavioral_true: list[float]     # fraction of probes that truly complied
-    snapshots: list[list[str]] = field(default_factory=list)
+    snapshots: list[list[NoteSnapshot]] = field(default_factory=list)
 
 
 def _trial_rng(seed: int, trial: int, stream: str) -> random.Random:
@@ -140,7 +152,7 @@ def run_trial(cfg: ExperimentConfig, trial: int = 0, *, consolidator: Consolidat
         trace.hits["benign"].append(detectors.semantic(visible, BENIGN_PROBE_TERMS))
         if record_snapshots:
             trace.snapshots.append([
-                f"{s.prov.tag()} {s.text}" + (" [quarantined]" if it.quarantined else "")
+                NoteSnapshot(s.prov.source, s.prov.trust.name.lower(), s.text, it.quarantined)
                 for it, s in store.sentences()
                 if any(l.startswith(ATTACK_ROOT) for l in s.lineage)
             ])

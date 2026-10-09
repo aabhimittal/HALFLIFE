@@ -39,6 +39,7 @@ judge components (and a generic adapter) for measuring real hosts.
 pip install -e .            # no dependencies; Python ≥ 3.10
 halflife demo --quick       # guided walkthrough, about 20 s
 halflife list               # payloads, channels, defenses
+halflife showcase --workers 4   # interactive HTML report of every configuration
 halflife run --payload zombie --defense provenance
 halflife compare --payloads plain,zombie --defenses none,provenance,attributed,ttl --markdown
 ```
@@ -57,6 +58,27 @@ benign         6.5     [5.8, 7.2]     6.5     4.9  ███▇▇▅▄▄▂�
 ```
 
 The full demo output is in [docs/DEMO_OUTPUT.md](docs/DEMO_OUTPUT.md).
+
+## Interactive showcase
+
+```bash
+halflife showcase --out showcase.html --workers 4   # about a minute; open the file in a browser
+```
+
+This builds one self-contained page from fresh runs of every attack × channel × defense,
+with and without write-back (150 configurations), and has four parts:
+
+- **Survival curves.** Pick an attack, the channel it arrives on, and a defense. All five
+  detectors are drawn on one plot, with t½, a bootstrap CI and end-of-run survival beside it.
+- **Rewrite trace.** Step through one recorded trial, cycle by cycle. The note is reworded,
+  its provenance tag flips from `untrusted` to `system`, and quarantine hides it.
+- **Attack × defense matrix.** Switch between attack t½, text t½, compliance at the end
+  and benign availability. Selecting a cell loads that configuration into the curves.
+- **Judge-noise lab.** Set the judge's false-positive and false-negative rates and compare
+  the true, judged and Rogan–Gladen-corrected curves.
+
+A pre-built copy (100 trials, seed 0) is at [docs/showcase.html](docs/showcase.html).
+GitHub shows HTML as source, so download the file and open it locally.
 
 ## What the simulated host shows
 
@@ -136,10 +158,11 @@ halflife/
   stats.py         half-life estimators, KM, decay fit, bootstrap, Rogan–Gladen
   experiment.py    trial/experiment/matrix runners
   report.py, cli.py, demo.py
+  showcase.py      builds the interactive HTML page (template: showcase_template.html)
   llm/claude.py    Claude-backed consolidator, agent, judge
-docs/              THREAT_MODEL.md, METHODOLOGY.md, DEMO_OUTPUT.md
+docs/              THREAT_MODEL.md, METHODOLOGY.md, DEMO_OUTPUT.md, showcase.html
 examples/demo.py   guided walkthrough
-tests/             115 tests, offline (fake LLM client)
+tests/             123 tests, offline (fake LLM client)
 ```
 
 ## Limitations
