@@ -13,6 +13,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false  # one version failing must not hide whether the others pass
       matrix:
         python: ["3.10", "3.12", "3.13"]
     steps:

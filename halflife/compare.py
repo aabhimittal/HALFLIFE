@@ -10,6 +10,7 @@ bootstrap interval; ``holm`` controls the family-wise error across many tests.
 
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass
 from typing import Sequence
@@ -48,14 +49,16 @@ def paired(a: Sequence[float], b: Sequence[float], *, resamples: int = 2000, see
         raise ValueError("paired comparison needs at least one trial")
     d = [x - y for x, y in zip(a, b, strict=True)]
     n = len(d)
-    mean = sum(d) / n
+    # math.fsum is exactly rounded on every Python version; the built-in sum() only
+    # compensates for rounding from 3.12, so results would otherwise differ across versions.
+    mean = math.fsum(d) / n
     rng = random.Random(seed)
-    boots = sorted(sum(d[rng.randrange(n)] for _ in range(n)) / n for _ in range(resamples))
+    boots = sorted(math.fsum(d[rng.randrange(n)] for _ in range(n)) / n for _ in range(resamples))
     ci = (boots[int(0.025 * (resamples - 1))], boots[int(0.975 * (resamples - 1))])
     if all(x == 0 for x in d):
         return Paired(0.0, (0.0, 0.0), 1.0, n)
     observed = abs(mean)
-    extreme = sum(abs(sum(x if rng.random() < 0.5 else -x for x in d) / n) >= observed - 1e-12
+    extreme = sum(abs(math.fsum(x if rng.random() < 0.5 else -x for x in d) / n) >= observed - 1e-12
                   for _ in range(resamples))
     return Paired(mean, ci, (extreme + 1) / (resamples + 1), n)
 
