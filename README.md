@@ -2,6 +2,11 @@
 
 **Measure how long a poisoned memory survives.**
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/survival-dark.png">
+  <img alt="Survival curves for a plain injection with no defense: the exact text is gone after about 2 cycles and its meaning after about 7, but the agent keeps complying until about cycle 25" src="docs/images/survival.png">
+</picture>
+
 Agent memory is no longer write-once. Background consolidation (sleep-time memory agents,
 background memory synthesis) rewrites memory between sessions: it merges notes, rewords
 them, drops some, and keeps the rest. That changes the security question for prompt
@@ -77,7 +82,17 @@ with and without write-back (150 configurations), and has four parts:
 - **Judge-noise lab.** Set the judge's false-positive and false-negative rates and compare
   the true, judged and Rogan–Gladen-corrected curves.
 
-A pre-built copy (100 trials, seed 0) is at [docs/showcase.html](docs/showcase.html).
+| Rewrite trace | Attack × defense matrix |
+|---|---|
+| <picture>   <source media="(prefers-color-scheme: dark)" srcset="docs/images/trace-dark.png">   <img alt="Cycle 1 of a recorded trial: the injected note has been relabelled from untrusted to system" src="docs/images/trace.png"> </picture> | <picture>   <source media="(prefers-color-scheme: dark)" srcset="docs/images/matrix-dark.png">   <img alt="Attack half-life for every attack against every defense" src="docs/images/matrix.png"> </picture> |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/judge-dark.png">
+  <img alt="A judge with 20% false positives and 30% false negatives halves the measured half-life; the corrected curve recovers it" src="docs/images/judge.png">
+</picture>
+
+The images are screenshots of the page with the simulated host's numbers (100 trials, seed 0).
+A pre-built copy of the page is at [docs/showcase.html](docs/showcase.html).
 GitHub shows HTML as source, so download the file and open it locally.
 
 ## What the simulated host shows

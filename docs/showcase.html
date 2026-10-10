@@ -88,7 +88,7 @@ section { display: grid; gap: 16px; }
 .toggle input { width: 16px; height: 16px; accent-color: var(--accent); }
 
 /* Survival chart */
-.survival { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; }
+.survival { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 @media (max-width: 860px) { .survival { grid-template-columns: 1fr; } }
 .chart-box { position: relative; }
 .chart-box svg { width: 100%; height: auto; display: block; overflow: visible; }
@@ -146,6 +146,8 @@ mark.url { background: transparent; color: inherit; text-decoration: underline w
 /* Matrix */
 .matrix-wrap { overflow-x: auto; }
 table.matrix { border-collapse: separate; border-spacing: 3px; min-width: 620px; width: 100%; font-size: 13.5px; }
+table.matrix { table-layout: fixed; }
+.matrix thead th:first-child { width: 18%; }
 .matrix th { font-weight: 600; font-size: 12px; color: var(--ink-2); text-align: left; padding: 4px 6px; }
 .matrix th.col { text-align: center; }
 .matrix td { padding: 0; }
@@ -156,7 +158,8 @@ table.matrix { border-collapse: separate; border-spacing: 3px; min-width: 620px;
 .ramp { width: 160px; height: 10px; border-radius: 3px; }
 
 /* Judge */
-.judge { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; }
+.judge { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink-2); margin-top: 8px; }
 @media (max-width: 860px) { .judge { grid-template-columns: 1fr; } }
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
 .stat .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
@@ -254,6 +257,7 @@ footer { color: var(--ink-3); font-size: 13.5px; border-top: 1px solid var(--rul
       <div class="panel chart-box" id="judge-box">
         <svg id="judge-svg" viewBox="0 0 720 300" role="img" aria-labelledby="judge-title"><title id="judge-title">True, judged and corrected behavioral survival</title></svg>
         <div class="tooltip" id="judge-tip" hidden></div>
+        <div class="chart-legend" id="judge-legend"></div>
       </div>
       <div class="panel readout">
         <div class="ctl"><span>False-positive rate</span><div class="seg" id="ctl-fpr" role="group" aria-label="False-positive rate"></div></div>
@@ -355,7 +359,7 @@ footer { color: var(--ink-3); font-size: 13.5px; border-top: 1px solid var(--rul
     const step = N <= 30 ? 5 : 10;
     for (let c = 0; c <= N; c += step) el("text", { x: x(c), y: H - 12, "text-anchor": "middle" }, axis).textContent = c;
     el("text", { x: m.l + iw, y: H - 0, "text-anchor": "end", class: "chart-label" }, svg).textContent = "consolidation cycle →";
-    el("text", { x: m.l + iw - 2, y: y(0.5) - 6, "text-anchor": "end", class: "chart-label" }, svg).textContent = "t½ threshold";
+    el("text", { x: m.l + 6, y: y(0.5) - 6, "text-anchor": "start", class: "chart-label" }, svg).textContent = "t½ threshold (50%)";
 
     const shown = series.filter(s => !s.hidden && s.values);
     for (const s of shown) {
@@ -546,11 +550,13 @@ footer { color: var(--ink-3); font-size: 13.5px; border-top: 1px solid var(--rul
       { key: "corr", label: "Corrected", color: "--s-sem", values: corrected },
     ];
     lineChart(byId("judge-svg"), byId("judge-tip"), byId("judge-box"), series, { height: 300, hero: "true" });
-    const mae = c => c ? (mean(c.map((v, i) => Math.abs(v - j.true[i]))) * 100).toFixed(1) + " pts" : "–";
+    byId("judge-legend").innerHTML = series.filter(s => s.values).map(s =>
+      `<span><span class="sw${s.dash ? " dash" : ""}" style="${s.dash ? "" : `background:var(${s.color});`}color:var(${s.color})"></span>${esc(s.label)}</span>`).join("");
+    const mae = c => c ? (mean(c.map((v, i) => Math.abs(v - j.true[i]))) * 100).toFixed(1) : "–";
     byId("judge-stats").innerHTML = [
       ["Sensitivity", pct(j.se)], ["Specificity", pct(j.sp)],
       ["t½ true", halfLife(j.true)], ["t½ as judged", halfLife(j.obs)],
-      ["t½ corrected", corrected ? halfLife(corrected) : "–"], ["Avg error, judged → corrected", `${mae(j.obs)} → ${mae(corrected)}`],
+      ["t½ corrected", corrected ? halfLife(corrected) : "–"], ["Avg error (pts)", `${mae(j.obs)} → ${mae(corrected)}`],
     ].map(([k, v]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v num">${esc(v)}</div></div>`).join("");
     byId("judge-insight").innerHTML = state.fpr === 0 && state.fnr === 0
       ? "A perfect judge: all three curves coincide. Add some error."
