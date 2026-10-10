@@ -15,3 +15,4 @@ jobs:
       - run: pytest -q
       - run: halflife run --trials 10 --cycles 10 --no-plot
       - run: python examples/demo.py --quick > /dev/null
+      - run: halflife showcase --trials 2 --cycles 3 --out /tmp/showcase.html

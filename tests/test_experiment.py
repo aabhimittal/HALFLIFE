@@ -126,9 +126,11 @@ def test_multiple_probes_per_cycle():
 def test_snapshots_track_only_attack_lineage(small_cfg):
     tr = run_trial(small_cfg, 0, record_snapshots=True)
     assert len(tr.snapshots) == small_cfg.cycles + 1
+    notes = [str(n) for n in tr.snapshots[0]]
+    assert notes and tr.snapshots[0][0].trust == "untrusted"
     assert all("pay-verify" in n or "preserve" in n or "Tool output" in n or "pointed" in n
                or "portal" in n or "payment" in n.lower() or "billing" in n.lower() or "checkout" in n.lower()
-               for n in tr.snapshots[0])
+               for n in notes)
 
 
 def test_json_roundtrip_has_no_nan_or_inf(small_cfg):

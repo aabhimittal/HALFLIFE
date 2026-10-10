@@ -41,7 +41,7 @@ def _config(a: argparse.Namespace, **kw) -> ExperimentConfig:
 
 def _progress(done: int, total: int) -> None:
     if sys.stderr.isatty():
-        print(f"\r  trial {done}/{total}", end="" if done < total else "\n", file=sys.stderr)
+        print(f"\r  {done}/{total}", end="" if done < total else "\n", file=sys.stderr)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -61,6 +61,13 @@ def main(argv: list[str] | None = None) -> int:
     cmp_.add_argument("--markdown", action="store_true")
     _add_common(cmp_)
 
+    show = sub.add_parser("showcase", help="write the interactive HTML showcase")
+    show.add_argument("--out", default="halflife-showcase.html", help="output HTML path")
+    show.add_argument("--trials", type=int, default=100)
+    show.add_argument("--cycles", type=int, default=30)
+    show.add_argument("--seed", type=int, default=0)
+    show.add_argument("--workers", type=int, default=1, help="parallel processes")
+
     sub.add_parser("list", help="list payloads, channels and defenses")
     demo = sub.add_parser("demo", help="guided walkthrough")
     demo.add_argument("--quick", action="store_true", help="fewer trials")
@@ -78,6 +85,13 @@ def main(argv: list[str] | None = None) -> int:
             for d in DEFENSES.values():
                 flags = [f.name for f in fields(d) if f.name not in ("name", "quarantine_below") and getattr(d, f.name)]
                 print(f"  {d.name:<14} {', '.join(f'{f}={getattr(d, f)}' if f == 'ttl' else f for f in flags) or '-'}")
+            return 0
+        if a.cmd == "showcase":
+            from .showcase import build_data, render_html
+            data = build_data(a.trials, a.cycles, a.seed, a.workers, progress=_progress)
+            with open(a.out, "w", encoding="utf-8") as f:
+                f.write(render_html(data))
+            print(f"wrote {a.out} ({len(data['runs'])} configurations x {a.trials} trials); open it in a browser")
             return 0
         if a.cmd == "demo":
             from .demo import main as demo_main
