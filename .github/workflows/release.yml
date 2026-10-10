@@ -1,6 +1,8 @@
 name: release
 # Publishes to PyPI when a version tag (v*) is pushed. Uses PyPI trusted publishing:
-# configure this repository as a trusted publisher for the "halflife" project on PyPI first.
+# configure this repository as a trusted publisher for the "halflife-bench" project on PyPI first
+# (PyPI > Your projects > Publishing > add a pending publisher: owner aabhimittal, repo HALFLIFE,
+# workflow release.yml, environment pypi). The name "halflife" itself is taken on PyPI.
 on:
   push:
     tags: ["v*"]

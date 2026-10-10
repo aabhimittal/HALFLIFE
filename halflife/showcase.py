@@ -140,6 +140,8 @@ _SKELETON = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\
 def render_html(data: dict, standalone: bool = True) -> str:
     """Fill the page template. ``standalone=False`` returns the body fragment only."""
     template = resources.files("halflife").joinpath("showcase_template.html").read_text(encoding="utf-8")
-    payload = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
+    # Escape every "<" (as \u003c, valid inside JSON strings): "</script>" would close the element,
+    # and "<!--" followed by "<script" switches the HTML tokenizer into an escaped state.
+    payload = json.dumps(data, separators=(",", ":")).replace("<", "\\u003c")
     page = template.replace("__HALFLIFE_DATA__", payload, 1)
     return _SKELETON.format(page) if standalone else page
