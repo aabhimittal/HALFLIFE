@@ -146,7 +146,8 @@ merge). Each is a parameter you can change, and a claim to re-test on a real hos
 ## Measuring a real host
 
 ```bash
-pip install -e ".[claude]"            # anthropic SDK; credentials from ANTHROPIC_API_KEY or `ant auth login`
+pip install -e ".[claude]"            # anthropic SDK
+export ANTHROPIC_API_KEY=...          # create one at https://platform.claude.com/settings/keys
 halflife live --payload zombie --defense provenance           # prints calls and estimated cost, spends nothing
 halflife live --payload zombie --defense provenance --yes     # runs it
 ```
@@ -254,7 +255,7 @@ docs/              THREAT_MODEL.md, METHODOLOGY.md, DEMO_OUTPUT.md, showcase.htm
 examples/demo.py   guided walkthrough
 results/           suite result files (simulated baselines); LEADERBOARD.md is built from them
 scripts/           shoot_showcase.js re-shoots the README images
-tests/             524 tests, offline (fake LLM client), incl. randomized invariant tests
+tests/             204 tests, offline (fake LLM client); 10 are property-based (~1,000 new cases per run)
 ```
 
 ## Limitations
@@ -281,8 +282,10 @@ tests/             524 tests, offline (fake LLM client), incl. randomized invari
 pip install -e ".[dev]" && pytest -q
 ```
 
-`tests/test_invariants.py` checks properties that must hold for any input over hundreds of
-seeded random cases: text operations never corrupt URLs, a half-life always sits on its curve's
+`tests/test_invariants.py` uses [Hypothesis](https://hypothesis.readthedocs.io) to check
+properties that must hold for any input, searching new cases on every run (a failure is shrunk
+to a minimal example and replayed first next time; a nightly CI job runs a 3,000-case search per
+property, or locally `HYPOTHESIS_PROFILE=deep pytest tests/test_invariants.py`): text operations never corrupt URLs, a half-life always sits on its curve's
 first crossing, consolidation never exceeds capacity, never invents lineage and (with
 attribution) never raises a note's trust, and an agent that follows the attacker always has a
 descendant of the injection in memory. These tests were themselves checked by deliberately
@@ -293,6 +296,20 @@ uninformative judges, garbage LLM output, missing provenance tags, refusals,
 black-box hosts that forget everything, markdown-formatted model verdicts, corrupt or
 foreign checkpoints, a failing trial in a parallel run, Ctrl-C mid-run, out-of-range
 simulator parameters, malformed result files, and page-breaking text in the showcase data.
+
+## Releasing
+
+Releases go to PyPI as **`halflife-bench`** (the name `halflife` belongs to another project),
+published by `.github/workflows/release.yml` with PyPI trusted publishing, so no API token is
+stored anywhere. One-time setup:
+
+1. Log in at https://pypi.org/manage/account/publishing/ and add a **pending publisher**:
+   project `halflife-bench`, owner `aabhimittal`, repository `HALFLIFE`, workflow
+   `release.yml`, environment `pypi`. (Background:
+   https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
+2. Push a tag that matches the version in `pyproject.toml`:
+   `git tag v0.2.0 && git push origin v0.2.0`. The workflow checks that they match, builds,
+   and publishes; GitHub creates the `pypi` environment on first use.
 
 ## License
 

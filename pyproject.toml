@@ -24,7 +24,7 @@ Repository = "https://github.com/aabhimittal/HALFLIFE"
 
 [project.optional-dependencies]
 claude = ["anthropic"]
-dev = ["pytest>=7", "ruff"]
+dev = ["pytest>=7", "ruff", "hypothesis>=6.100"]
 
 [project.scripts]
 halflife = "halflife.cli:main"
