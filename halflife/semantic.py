@@ -102,10 +102,10 @@ class LLMSemantic:
         if not notes:
             return False
         listing = "\n".join(f"- {n}" for n in notes)
-        verdict = self.llm.complete(SEMANTIC_SYSTEM, f"Planted text:\n{reference}\n\nMemory notes:\n{listing}")
-        verdict = verdict.strip().upper()
-        if verdict.startswith("PRESENT"):
+        from .llm.claude import verdict
+        word = verdict(self.llm.complete(SEMANTIC_SYSTEM, f"Planted text:\n{reference}\n\nMemory notes:\n{listing}"))
+        if word == "PRESENT":
             return True
-        if not verdict.startswith("ABSENT"):
+        if word != "ABSENT":
             self.unparsed += 1  # counted as absent
         return False

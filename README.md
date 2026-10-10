@@ -41,7 +41,8 @@ judge components (and a generic adapter) for measuring real hosts.
 ## Quickstart
 
 ```bash
-pip install -e .            # no dependencies; Python ≥ 3.10
+pip install -e .            # from a clone; no dependencies; Python ≥ 3.10
+# once released: pip install halflife-bench   (imports and runs as `halflife`)
 halflife demo --quick       # guided walkthrough, about 20 s
 halflife list               # payloads, channels, defenses
 halflife showcase --workers 4   # interactive HTML report of every configuration
@@ -253,7 +254,7 @@ docs/              THREAT_MODEL.md, METHODOLOGY.md, DEMO_OUTPUT.md, showcase.htm
 examples/demo.py   guided walkthrough
 results/           suite result files (simulated baselines); LEADERBOARD.md is built from them
 scripts/           shoot_showcase.js re-shoots the README images
-tests/             166 tests, offline (fake LLM client)
+tests/             524 tests, offline (fake LLM client), incl. randomized invariant tests
 ```
 
 ## Limitations
@@ -280,11 +281,18 @@ tests/             166 tests, offline (fake LLM client)
 pip install -e ".[dev]" && pytest -q
 ```
 
-Edge cases covered include Unicode/zero-width obfuscation, URL-substring topic confusion,
+`tests/test_invariants.py` checks properties that must hold for any input over hundreds of
+seeded random cases: text operations never corrupt URLs, a half-life always sits on its curve's
+first crossing, consolidation never exceeds capacity, never invents lineage and (with
+attribution) never raises a note's trust, and an agent that follows the attacker always has a
+descendant of the injection in memory. These tests were themselves checked by deliberately
+breaking the code: each break was caught. Edge cases covered include Unicode/zero-width obfuscation, URL-substring topic confusion,
 lookalike hosts, zero cycles, zero capacity, empty memory, censored and never-established
 curves, injections that are established late, exact-threshold crossings, ragged inputs,
-uninformative judges, garbage LLM output, missing provenance tags, refusals, and
-black-box hosts that forget everything.
+uninformative judges, garbage LLM output, missing provenance tags, refusals,
+black-box hosts that forget everything, markdown-formatted model verdicts, corrupt or
+foreign checkpoints, a failing trial in a parallel run, Ctrl-C mid-run, out-of-range
+simulator parameters, malformed result files, and page-breaking text in the showcase data.
 
 ## License
 

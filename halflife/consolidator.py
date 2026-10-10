@@ -53,6 +53,17 @@ class SimulatedConsolidator:
     dedupe_threshold: float = 0.6
     eviction_noise: float = 0.15
 
+    def __post_init__(self) -> None:
+        for name in ("merge_prob", "misc_attach_prob", "paraphrase_prob", "paraphrase_rate",
+                     "clause_drop_prob", "abstract_prob", "obey_prob", "dedupe_threshold"):
+            if not 0 <= getattr(self, name) <= 1:
+                raise ValueError(f"{name} must be in [0, 1], got {getattr(self, name)}")
+        if not 0 < self.decay <= 1:
+            raise ValueError(f"decay must be in (0, 1], got {self.decay}")
+        for name in ("pin_boost", "assertive_boost", "forget_below", "eviction_noise"):
+            if getattr(self, name) < 0:
+                raise ValueError(f"{name} must be >= 0, got {getattr(self, name)}")
+
     def consolidate(self, store: MemoryStore, cycle: int, rng: random.Random, defense: Defense) -> None:
         held = [it for it in store.items if it.quarantined]
         active = [it for it in store.items if not it.quarantined]

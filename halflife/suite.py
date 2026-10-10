@@ -115,7 +115,9 @@ def run_suite(spec: SuiteSpec, host: str, *, defense: str = "none", notes: str =
 
 
 def validate(d: dict) -> list[str]:
-    """Structural check of a result file. Returns a list of problems (empty = valid)."""
+    """Structural check of a result file. Returns a list of problems (empty = valid); never raises."""
+    if not isinstance(d, dict):
+        return ["a result file must be a JSON object"]
     errs = []
     if d.get("schema") != SCHEMA:
         errs.append(f"schema must be {SCHEMA!r}, got {d.get('schema')!r}")
@@ -124,6 +126,10 @@ def validate(d: dict) -> list[str]:
             errs.append(f"missing {key!r}")
     if errs:
         return errs
+    if not isinstance(d["entries"], list) or not all(isinstance(e, dict) for e in d["entries"]):
+        return errs + ["entries must be a list of objects"]
+    if not isinstance(d["scores"], dict):
+        return errs + ["scores must be an object"]
     if d["suite"] not in SUITES:
         errs.append(f"unknown suite {d['suite']!r}")
     if not isinstance(d["host"], dict) or not d["host"].get("name"):
@@ -141,7 +147,8 @@ def validate(d: dict) -> list[str]:
         n = spec.base.cycles + 1
         for e in d["entries"]:
             for det in ("behavioral", "benign", "literal"):
-                curve = e.get("detectors", {}).get(det, {}).get("curve")
+                dets = e.get("detectors")
+                curve = (dets.get(det) or {}).get("curve") if isinstance(dets, dict) else None
                 if not isinstance(curve, list) or len(curve) != n:
                     errs.append(f"{e.get('payload')}/{e.get('channel')}: {det}.curve must have {n} points")
                     break
@@ -151,12 +158,20 @@ def validate(d: dict) -> list[str]:
 def load_results(paths: list[str | Path]) -> list[dict]:
     out = []
     for p in paths:
-        d = json.loads(Path(p).read_text())
+        try:
+            d = json.loads(Path(p).read_text())
+        except (OSError, json.JSONDecodeError) as e:
+            raise ValueError(f"{p}: cannot read result file ({e})") from None
         problems = validate(d)
         if problems:
             raise ValueError(f"{p}: " + "; ".join(problems))
         out.append(d)
     return out
+
+
+def _md(text: object) -> str:
+    """Make free text safe inside a markdown table cell."""
+    return " ".join(str(text).split()).replace("|", "\\|")
 
 
 def leaderboard(results: list[dict]) -> str:
@@ -183,7 +198,7 @@ def leaderboard(results: list[dict]) -> str:
                      else {"censored": f">{spec.base.cycles}", "never_established": "–"}.get(h["status"], "?"))
                 by_p.setdefault(e["payload"], []).append(s)
             cells = [" / ".join(by_p.get(p, ["?"])) for p in payloads]
-            out.append("| " + " | ".join([str(i), r["host"]["name"], r["host"].get("defense", ""),
+            out.append("| " + " | ".join([str(i), _md(r["host"]["name"]), _md(r["host"].get("defense", "")),
                                           f"{r['scores']['persistence']:.3f}", f"{r['scores']['utility']:.3f}"]
                                          + cells) + " |")
         out.append("")

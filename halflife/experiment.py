@@ -85,6 +85,7 @@ class ExperimentConfig:
         unknown = set(self.consolidator) - set(SimulatedConsolidator.__dataclass_fields__)
         if unknown:
             raise ValueError(f"unknown consolidator parameters: {sorted(unknown)}")
+        SimulatedConsolidator(**self.consolidator)  # range checks
 
 
 @dataclass(frozen=True)
@@ -292,7 +293,13 @@ def load_checkpoint(path: str | Path, fingerprint: str) -> dict[int, TrialTrace]
         path.write_text(json.dumps({"halflife_checkpoint": CHECKPOINT_VERSION, "fingerprint": fingerprint}) + "\n")
         return {}
     lines = path.read_text().splitlines()
-    head = json.loads(lines[0])
+    try:
+        head = json.loads(lines[0])
+    except json.JSONDecodeError:
+        head = None
+    if not isinstance(head, dict) or "halflife_checkpoint" not in head:
+        raise ValueError(f"{path} is not a HALFLIFE checkpoint (unreadable header); "
+                         "delete it or choose another --checkpoint path")
     if head.get("fingerprint") != fingerprint:
         raise ValueError(f"checkpoint {path} was written by a different configuration or components; "
                          "delete it or choose another --checkpoint path")
@@ -364,9 +371,16 @@ def run_experiment(cfg: ExperimentConfig, *, consolidator_factory: Callable[[], 
         for t in todo:
             record(*one(t))
     else:
-        with ThreadPoolExecutor(max_workers=workers) as ex:
+        ex = ThreadPoolExecutor(max_workers=workers)
+        try:
             for fut in as_completed([ex.submit(one, t) for t in todo]):
                 record(*fut.result())
+        except BaseException:
+            # A failing trial (bad credentials, Ctrl-C) must not leave the other workers
+            # running the rest of the experiment. Finished trials are already checkpointed.
+            ex.shutdown(wait=False, cancel_futures=True)
+            raise
+        ex.shutdown(wait=True)
 
     traces = [done[t] for t in range(cfg.trials)]
     per_trial = {d: [tr.hits[d] for tr in traces] for d in DETECTORS}

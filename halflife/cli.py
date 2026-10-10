@@ -32,10 +32,13 @@ def _add_common(p: argparse.ArgumentParser) -> None:
 def _config(a: argparse.Namespace, **kw) -> ExperimentConfig:
     cons = {}
     for item in a.set:
-        key, _, val = item.partition("=")
-        if not _:
+        key, sep, val = item.partition("=")
+        if not sep or not key:
             raise SystemExit(f"--set expects KEY=VALUE, got {item!r}")
-        cons[key] = float(val)
+        try:
+            cons[key] = float(val)
+        except ValueError:
+            raise ValueError(f"--set {key} needs a number, got {val!r}") from None
     return ExperimentConfig(channel=a.channel, cycles=a.cycles, trials=a.trials, seed=a.seed,
                             capacity=a.capacity, interactions_per_cycle=a.interactions,
                             judge_fpr=a.judge_fpr, judge_fnr=a.judge_fnr, consolidator=cons,
@@ -140,7 +143,10 @@ def _suite(a: argparse.Namespace) -> int:
     if a.suite_cmd == "validate":
         bad = 0
         for f in a.files:
-            problems = validate(json.loads(open(f).read()))
+            try:
+                problems = validate(json.loads(open(f).read()))
+            except (OSError, json.JSONDecodeError) as e:
+                problems = [f"cannot read result file ({e})"]
             print(f"{f}: " + ("ok" if not problems else "; ".join(problems)))
             bad += bool(problems)
         return 1 if bad else 0
