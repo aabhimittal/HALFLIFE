@@ -9,4 +9,4 @@ __all__ = [
     "CHANNELS", "DEFENSES", "PAYLOADS", "ExperimentConfig", "ExperimentResult", "HalfLife",
     "fit_decay", "prevalence_half_life", "rogan_gladen", "run_experiment", "run_matrix", "run_trial",
 ]
-__version__ = "0.1.0"
+__version__ = "0.2.0"
