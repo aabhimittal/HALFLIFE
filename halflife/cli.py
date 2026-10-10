@@ -44,8 +44,64 @@ def _progress(done: int, total: int) -> None:
         print(f"\r  {done}/{total}", end="" if done < total else "\n", file=sys.stderr)
 
 
+def _make_client(**kw):
+    """Indirection so tests can substitute a fake client."""
+    from .llm import ClaudeClient
+    return ClaudeClient(**kw)
+
+
+def _live(a: argparse.Namespace) -> int:
+    from .llm import LLMAgent, LLMConsolidator, LLMJudge
+    from .llm.cache import ResponseCache
+    from .llm.cost import estimate, format_estimate
+    from .semantic import LLMSemantic
+
+    cfg = _config(a, payload=a.payload, defense=a.defense)
+    cfg.validate()
+    m = a.model
+    rows = estimate(cfg, consolidator=m if a.consolidator == "claude" else None,
+                    agent=m if a.agent == "claude" else None,
+                    judge=m if a.judge == "claude" else None,
+                    semantic=m if a.semantic == "claude" else None)
+    print(f"live run: payload={cfg.payload} defense={cfg.defense} channel={cfg.channel} "
+          f"trials={cfg.trials} cycles={cfg.cycles} model={m}\n")
+    print(format_estimate(rows))
+    if a.semantic == "lexical" and a.consolidator == "claude":
+        print("\nwarning: the lexical semantic detector only undoes the simulator's synonym swaps; "
+              "on a real consolidator it will report meaning as lost too early.")
+    if not a.yes:
+        print("\nNothing was spent. Re-run with --yes to make these calls.")
+        return 0
+
+    cache = ResponseCache(a.cache) if a.cache else None
+    llm = _make_client(model=m, effort=a.effort, cache=cache)
+    checkpoint = a.checkpoint or f".halflife/live-{cfg.payload}-{cfg.defense}-{cfg.channel}-s{cfg.seed}.jsonl"
+    try:
+        r = run_experiment(
+            cfg,
+            consolidator_factory=(lambda: LLMConsolidator(llm)) if a.consolidator == "claude" else None,
+            agent=LLMAgent(llm) if a.agent == "claude" else None,
+            judge=LLMJudge(llm) if a.judge == "claude" else None,
+            semantic=LLMSemantic(llm) if a.semantic == "claude" else None,
+            checkpoint=checkpoint, workers=a.workers, progress=_progress,
+        )
+    except KeyboardInterrupt:
+        print(f"\ninterrupted; finished trials are saved in {checkpoint}. Re-run the same command to resume.")
+        return 130
+    print(summary(r, plot=not getattr(a, "no_plot", False)))
+    hits = f", cache hits {cache.hits}" if cache else ""
+    print(f"\nAPI calls {llm.calls}{hits}; tokens in {llm.input_tokens:,}, out {llm.output_tokens:,}. "
+          f"Checkpoint: {checkpoint}")
+    if a.json:
+        with open(a.json, "w") as f:
+            f.write(r.to_json(include_trials=True, indent=2))
+        print(f"wrote {a.json}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(prog="halflife", description="Measure how long a poisoned memory survives consolidation.")
+    ap = argparse.ArgumentParser(prog="halflife",
+                                 description="Measure how long a poisoned memory survives consolidation.")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     run = sub.add_parser("run", help="one payload x one defense")
@@ -68,6 +124,31 @@ def main(argv: list[str] | None = None) -> int:
     show.add_argument("--seed", type=int, default=0)
     show.add_argument("--workers", type=int, default=1, help="parallel processes")
 
+    live = sub.add_parser("live", help="measure with Claude-backed components (spends API credit)")
+    live.add_argument("--payload", default="zombie", choices=sorted(PAYLOADS))
+    live.add_argument("--defense", default="none", choices=sorted(DEFENSES))
+    live.add_argument("--consolidator", default="claude", choices=["claude", "sim"])
+    live.add_argument("--agent", default="claude", choices=["claude", "sim"])
+    live.add_argument("--judge", default="rule", choices=["rule", "claude"],
+                      help="rule is exact for canary goals; claude is needed for goals a rule cannot check")
+    live.add_argument("--semantic", default="claude", choices=["claude", "lexical"],
+                      help="lexical only sees the simulator's synonym swaps; use claude on a real host")
+    live.add_argument("--model", default="claude-opus-5-5")
+    live.add_argument("--effort", default=None, choices=["low", "medium", "high", "xhigh", "max"])
+    live.add_argument("--workers", type=int, default=4, help="trials run concurrently")
+    live.add_argument("--cache", default=".halflife/cache.sqlite", help="response cache (resume costs nothing)")
+    live.add_argument("--checkpoint", default=None, help="JSONL of finished trials; default under .halflife/")
+    live.add_argument("--yes", action="store_true", help="actually make the calls (otherwise only estimate)")
+    _add_common(live)
+    live.set_defaults(trials=30, cycles=20)
+
+    sw = sub.add_parser("sweep", help="re-test the headline claims across one parameter's range")
+    sw.add_argument("--param", required=True, help="a consolidator or experiment parameter, e.g. obey_prob")
+    sw.add_argument("--values", required=True, help="comma-separated values, e.g. 0.1,0.3,0.5,0.7,0.9")
+    sw.add_argument("--claims", default=None, help="comma-separated claim names (default: all)")
+    _add_common(sw)
+    sw.set_defaults(trials=60, cycles=20)
+
     sub.add_parser("list", help="list payloads, channels and defenses")
     demo = sub.add_parser("demo", help="guided walkthrough")
     demo.add_argument("--quick", action="store_true", help="fewer trials")
@@ -86,6 +167,26 @@ def main(argv: list[str] | None = None) -> int:
                 flags = [f.name for f in fields(d) if f.name not in ("name", "quarantine_below") and getattr(d, f.name)]
                 print(f"  {d.name:<14} {', '.join(f'{f}={getattr(d, f)}' if f == 'ttl' else f for f in flags) or '-'}")
             return 0
+        if a.cmd == "sweep":
+            from .sweep import CLAIMS, format_sweep, run_sweep
+            names = [x.strip() for x in a.claims.split(",")] if a.claims else None
+            unknown = set(names or []) - {c.name for c in CLAIMS}
+            if unknown:
+                raise ValueError(f"unknown claims {sorted(unknown)}; choose from {[c.name for c in CLAIMS]}")
+            claims = [c for c in CLAIMS if names is None or c.name in names]
+            try:
+                values = [float(v) for v in a.values.split(",") if v.strip()]
+            except ValueError:
+                raise ValueError(f"--values must be numbers, got {a.values!r}") from None
+            res = run_sweep(_config(a), a.param, values, claims, progress=_progress)
+            print(format_sweep(res))
+            if a.json:
+                with open(a.json, "w") as f:
+                    json.dump(res.to_dict(), f, indent=2)
+                print(f"\nwrote {a.json}")
+            return 0
+        if a.cmd == "live":
+            return _live(a)
         if a.cmd == "showcase":
             from .showcase import build_data, render_html
             data = build_data(a.trials, a.cycles, a.seed, a.workers, progress=_progress)

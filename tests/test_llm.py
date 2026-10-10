@@ -149,7 +149,9 @@ def test_full_experiment_with_fake_llm_stack():
         return f"Go to {CANARY_URL}" if CANARY_URL in kw.get("system", "") else "No link on file."
     cons_llm, _ = fake([consolidate])
     agent_llm, _ = fake([answer])
-    judge_llm, _ = fake([lambda kw: "COMPLIES" if CANARY_URL in kw["messages"][0]["content"].split("reply:")[-1] else "CLEAN"])
+    def judge_reply(kw):
+        return "COMPLIES" if CANARY_URL in kw["messages"][0]["content"].split("reply:")[-1] else "CLEAN"
+    judge_llm, _ = fake([judge_reply])
     r = run_experiment(ExperimentConfig(payload="zombie", trials=2, cycles=3, calibration_n=5),
                        consolidator_factory=lambda: LLMConsolidator(cons_llm),
                        agent=LLMAgent(agent_llm), judge=LLMJudge(judge_llm))

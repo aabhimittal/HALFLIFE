@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import random
 import re
+import threading
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -18,6 +19,7 @@ from ..memory import MemoryItem, MemoryStore, Provenance, Trust
 from ..payloads import Payload
 from ..agent import Response
 from ..text import urls
+from .cache import ResponseCache, request_key
 
 DEFAULT_MODEL = "claude-opus-5-5"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
@@ -35,6 +37,9 @@ class RefusalError(RuntimeError):
     pass
 
 
+_COUNTER_LOCK = threading.Lock()
+
+
 @dataclass
 class ClaudeClient:
     client: Any = None
@@ -42,6 +47,8 @@ class ClaudeClient:
     max_tokens: int = 16000
     effort: str | None = None       # "low" is plenty for judging and consolidation
     server_fallbacks: bool = True   # route refusals to a fallback model server-side
+    cache: ResponseCache | None = None
+    max_retries: int = 4            # SDK-level retries for 429/5xx/connection errors
 
     def __post_init__(self) -> None:
         if self.client is None:
@@ -49,20 +56,36 @@ class ClaudeClient:
                 import anthropic
             except ImportError as e:  # pragma: no cover - depends on environment
                 raise RuntimeError("Claude backends need the SDK: pip install -e '.[claude]'") from e
-            self.client = anthropic.Anthropic()
+            self.client = anthropic.Anthropic(max_retries=self.max_retries)
+        self._lock = threading.Lock()
+        self.calls = self.input_tokens = self.output_tokens = 0
 
     def complete(self, system: str, user: str) -> str:
         kw: dict[str, Any] = dict(model=self.model, max_tokens=self.max_tokens, system=system,
                                   messages=[{"role": "user", "content": user}])
         if self.effort:
             kw["output_config"] = {"effort": self.effort}
+        key = None
+        if self.cache is not None:
+            key = request_key(kw)
+            hit = self.cache.get(key)
+            if hit is not None:
+                return hit
         if self.server_fallbacks:
             resp = self.client.beta.messages.create(**kw, betas=[FALLBACK_BETA], fallbacks="default")
         else:
             resp = self.client.messages.create(**kw)
+        usage = getattr(resp, "usage", None)
+        with self._lock:
+            self.calls += 1
+            self.input_tokens += getattr(usage, "input_tokens", 0) or 0
+            self.output_tokens += getattr(usage, "output_tokens", 0) or 0
         if getattr(resp, "stop_reason", None) == "refusal":
             raise RefusalError(str(getattr(resp, "stop_details", "") or "model refused"))
-        return "".join(b.text for b in resp.content if getattr(b, "type", None) == "text")
+        text = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text")
+        if key is not None:
+            self.cache.put(key, text)
+        return text
 
 
 # ------------------------------------------------------------------ consolidator
@@ -123,7 +146,8 @@ class LLMConsolidator:
         notes, provs = parse_notes(self.llm.complete(system, f"Current memory notes:\n{lines}"), attributed, cycle)
         if not notes:
             # A failed call is not forgetting; counting it as such would bias half-lives down.
-            self.failures += 1
+            with _COUNTER_LOCK:
+                self.failures += 1
             return
         store.items = [rebuild_item(notes, before, cycle, self.lineage_threshold, provs)] + held
 
@@ -176,5 +200,6 @@ class LLMJudge:
         if verdict.startswith("COMPLIES"):
             return True
         if not verdict.startswith("CLEAN"):
-            self.unparsed += 1  # counted as CLEAN; calibration absorbs the bias
+            with _COUNTER_LOCK:
+                self.unparsed += 1  # counted as CLEAN; calibration absorbs the bias
         return False

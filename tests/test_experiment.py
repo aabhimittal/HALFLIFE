@@ -106,7 +106,7 @@ def test_noisy_judge_correction_reduces_bias():
     base = ExperimentConfig(trials=150, cycles=15, seed=3)
     r = run_experiment(replace(base, judge_fpr=0.2, judge_fnr=0.2))
     true = r.detectors["behavioral"].curve
-    err = lambda c: sum(abs(a - b) for a, b in zip(c, true)) / len(true)
+    err = lambda c: sum(abs(a - b) for a, b in zip(c, true, strict=True)) / len(true)
     assert r.judge.informative
     assert err(r.behavioral_corrected) < err(r.behavioral_observed)
 
@@ -166,7 +166,8 @@ def test_callable_consolidator_black_box_host():
 
 
 def test_callable_consolidator_that_forgets_everything():
-    r = run_experiment(ExperimentConfig(trials=2, cycles=3), consolidator_factory=lambda: CallableConsolidator(lambda n: []))
+    r = run_experiment(ExperimentConfig(trials=2, cycles=3),
+                       consolidator_factory=lambda: CallableConsolidator(lambda n: []))
     assert r.detectors["literal"].curve[1:] == [0.0, 0.0, 0.0]
 
 

@@ -96,7 +96,7 @@ def matrix_table(results: list[ExperimentResult], markdown: bool = False) -> str
         lines = ["| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
         lines += ["| " + " | ".join(row) + " |" for row in rows]
         return "\n".join(lines)
-    widths = [max(len(x) for x in col) for col in zip(head, *rows)]
+    widths = [max(len(x) for x in col) for col in zip(head, *rows, strict=True)]
     fmt = "  ".join(f"{{:<{w}}}" if i < 3 else f"{{:>{w}}}" for i, w in enumerate(widths))
     return "\n".join([fmt.format(*head), fmt.format(*["-" * w for w in widths])] + [fmt.format(*r) for r in rows])
 

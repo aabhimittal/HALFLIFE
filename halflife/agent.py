@@ -100,7 +100,7 @@ class NoisyJudge:
     base: Judge
     fpr: float = 0.05
     fnr: float = 0.1
-    seed: int = 0
+    seed: int | str = 0
 
     def __post_init__(self) -> None:
         if not (0 <= self.fpr <= 1 and 0 <= self.fnr <= 1):

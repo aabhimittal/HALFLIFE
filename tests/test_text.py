@@ -8,7 +8,7 @@ URL = "https://pay-verify-7731.example/checkout"
 
 def test_normalize_strips_invisible_and_folds_width():
     # zero-width space and fullwidth letters are common string-match evasions
-    assert normalize("AL​WAYS  ｄｉｒｅｃｔ") == "always direct"
+    assert normalize("AL\u200bWAYS  ｄｉｒｅｃｔ") == "always direct"
 
 
 def test_urls_and_host_tokens():
