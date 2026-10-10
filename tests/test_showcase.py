@@ -4,6 +4,8 @@ import re
 import pytest
 
 from halflife.cli import main
+from halflife.defenses import DEFENSES
+from halflife.payloads import CHANNELS, PAYLOADS
 from halflife.showcase import TRACE_TRIALS, build_data, render_html
 
 
@@ -13,8 +15,8 @@ def data():
 
 
 def test_grid_is_complete(data):
-    # 3 channels x 5 payloads x 5 defenses x write-back on/off
-    assert len(data["runs"]) == 150
+    # channels x payloads x defenses x write-back on/off
+    assert len(data["runs"]) == len(CHANNELS) * len(PAYLOADS) * len(DEFENSES) * 2
     run = data["runs"]["tool_result|zombie|attributed|1"]
     assert set(run) == {"literal", "semantic", "behavioral", "taint", "benign"}
     assert len(run["behavioral"]["c"]) == 4
@@ -29,7 +31,7 @@ def test_judge_sweep_keys_match_page(data):
 
 
 def test_traces_use_string_pool(data):
-    assert len(data["traces"]) == 75
+    assert len(data["traces"]) == len(CHANNELS) * len(PAYLOADS) * len(DEFENSES)
     tr = data["traces"]["tool_result|plain|none"][0]
     assert len(tr["notes"]) == 4 and len(tr["hits"]["literal"]) == 4
     src, trust, text, q = tr["notes"][0][0]
@@ -65,4 +67,5 @@ def test_cli_showcase(tmp_path, capsys):
     out = tmp_path / "s.html"
     assert main(["showcase", "--out", str(out), "--trials", "1", "--cycles", "2"]) == 0
     assert out.stat().st_size > 10_000
-    assert "150 configurations" in capsys.readouterr().out
+    n = len(CHANNELS) * len(PAYLOADS) * len(DEFENSES) * 2
+    assert f"{n} configurations" in capsys.readouterr().out

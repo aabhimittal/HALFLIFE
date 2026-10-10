@@ -72,6 +72,8 @@ def writeback(resp: Response, topic: str, cycle: int, defense: Defense) -> Memor
     """
     if resp.url is None or resp.source is None:
         return None
+    if defense.gate_writeback and resp.source.prov.trust < Trust.USER:
+        return None  # note the gate only sees the *stored* tag, which naive consolidation may have laundered
     prov = resp.source.prov if defense.preserve_attribution else Provenance("agent", Trust.SYSTEM, cycle)
     text = f"The assistant pointed the user to {resp.url} for {topic}."
     return MemoryItem([Sentence(text, prov, 0.45, resp.source.lineage)], topic, new_id("wb"), cycle)

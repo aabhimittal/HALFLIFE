@@ -58,6 +58,7 @@ class ExperimentConfig:
     judge_fpr: float = 0.0            # >0 simulates an imperfect LLM judge
     judge_fnr: float = 0.0
     calibration_n: int = 200
+    reexpose_every: int = 0           # >0: the attacker's content is re-ingested every N cycles
     verify_benign: float = 0.5        # chance per cycle a user confirms a quarantined benign item
     verify_malicious: float = 0.02    # ...or rubber-stamps a quarantined malicious one
     agent_leak: float = 0.1
@@ -70,7 +71,7 @@ class ExperimentConfig:
         if self.probe_topic not in TOPICS:
             raise ValueError(f"unknown probe_topic {self.probe_topic!r}; choose from {sorted(TOPICS)}")
         for name in ("cycles", "capacity", "warmup_items", "benign_per_cycle",
-                     "interactions_per_cycle", "calibration_n"):
+                     "interactions_per_cycle", "calibration_n", "reexpose_every"):
             if getattr(self, name) < 0:
                 raise ValueError(f"{name} must be >= 0")
         if self.trials < 1:
@@ -175,6 +176,9 @@ def run_trial(cfg: ExperimentConfig, trial: int = 0, *, consolidator: Consolidat
 
     measure(0)
     for cycle in range(1, cfg.cycles + 1):
+        if cfg.reexpose_every and cycle % cfg.reexpose_every == 0:
+            for it in inject(payload, channel, cycle, ATTACK_ROOT):
+                ingest(it, cycle)  # e.g. the same poisoned page fetched again
         for it in benign_items(rng, cfg.benign_per_cycle, cycle):
             ingest(it, cycle)
         for _ in range(cfg.interactions_per_cycle):

@@ -71,7 +71,7 @@ halflife showcase --out showcase.html --workers 4   # about a minute; open the f
 ```
 
 This builds one self-contained page from fresh runs of every attack × channel × defense,
-with and without write-back (150 configurations), and has four parts:
+with and without write-back, and has four parts:
 
 - **Survival curves.** Pick an attack, the channel it arrives on, and a defense. All five
   detectors are drawn on one plot, with t½, a bootstrap CI and end-of-run survival beside it.

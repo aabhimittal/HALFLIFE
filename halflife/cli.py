@@ -20,6 +20,8 @@ def _add_common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--capacity", type=int, default=30)
     p.add_argument("--interactions", type=int, default=2, help="user interactions (with write-back) per cycle")
+    p.add_argument("--reexpose", type=int, default=0, metavar="N",
+                   help="re-ingest the attacker's content every N cycles (0 = a single write)")
     p.add_argument("--judge-fpr", type=float, default=0.0)
     p.add_argument("--judge-fnr", type=float, default=0.0)
     p.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
@@ -36,7 +38,8 @@ def _config(a: argparse.Namespace, **kw) -> ExperimentConfig:
         cons[key] = float(val)
     return ExperimentConfig(channel=a.channel, cycles=a.cycles, trials=a.trials, seed=a.seed,
                             capacity=a.capacity, interactions_per_cycle=a.interactions,
-                            judge_fpr=a.judge_fpr, judge_fnr=a.judge_fnr, consolidator=cons, **kw)
+                            judge_fpr=a.judge_fpr, judge_fnr=a.judge_fnr, consolidator=cons,
+                            reexpose_every=a.reexpose, **kw)
 
 
 def _progress(done: int, total: int) -> None:

@@ -291,7 +291,7 @@ footer { color: var(--ink-3); font-size: 13.5px; border-top: 1px solid var(--rul
   const LABEL = {
     plain: "Plain", authoritative: "Authoritative", zombie: "Zombie", stealth_fact: "Stealth fact", fragmented: "Fragmented",
     tool_result: "Tool result", document: "Document", user_message: "User message",
-    none: "None", provenance: "Tags", attributed: "Tags + attributed", ttl: "TTL quarantine", "attributed+ttl": "Attributed + TTL",
+    none: "None", provenance: "Tags", attributed: "Tags + attributed", ttl: "TTL quarantine", "attributed+ttl": "Attributed + TTL", gated: "Tags + write-back gate", sanitize: "Sanitize directives",
   };
   const lab = k => LABEL[k] || k;
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
