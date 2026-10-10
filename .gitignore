@@ -6,3 +6,6 @@ dist/
 *.json
 !examples/*.json
 .venv/
+dist/
+.halflife/
+!results/*.json

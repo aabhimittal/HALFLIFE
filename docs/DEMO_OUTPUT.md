@@ -70,12 +70,12 @@ the note: the host now vouches for the attacker's text.
 ============================================================================================
 payload=plain  channel=tool_result  defense=none  trials=150  cycles=30  seed=0
 
-detector        t½         95% CI   KM t½  fit t½  curve
-literal        2.3     [1.8, 3.0]     2.2     2.1  █▆▄▃▂▁▁                        
-semantic       7.8     [6.9, 8.3]     7.8     6.2  ████▇▆▆▄▄▃▂▂▂▁▁▁               
-behavioral     >30    [20.0, inf]    13.0    29.0  ████▇▇▇▇▇▇▆▆▆▅▆▅▅▅▅▅▅▅▅▅▄▄▄▄▄▄▄
-taint          >30     [inf, inf]     >30   174.1  ███████████████████████▇▇▇▇▇▇▇▇
-benign         6.5     [5.8, 7.2]     6.5     4.9  ███▇▇▅▄▄▂▂▁▁                   
+detector        t½         95% CI   KM t½  fit t½  steady  curve
+literal        2.3     [1.8, 3.0]     2.2     2.1    0.00  █▆▄▃▂▁▁                        
+semantic       7.8     [6.9, 8.3]     7.8     6.2    0.00  ████▇▆▆▄▄▃▂▂▂▁▁▁               
+behavioral     >30    [20.0, inf]    13.0    29.0    0.54  ████▇▇▇▇▇▇▆▆▆▅▆▅▅▅▅▅▅▅▅▅▄▄▄▄▄▄▄
+taint          >30     [inf, inf]     >30   174.1    0.88  ███████████████████████▇▇▇▇▇▇▇▇
+benign         6.5     [5.8, 7.2]     6.5     4.9    0.00  ███▇▇▅▄▄▂▂▁▁                   
 
 judge: sensitivity=1.00 specificity=1.00 (n=200+200)
 
@@ -193,16 +193,16 @@ exactly the kind of claim to re-test on a real host.
 ============================================================================================
 6. A noisy judge, and correcting for it
 ============================================================================================
-judge calibration: sensitivity=0.76 specificity=0.89
-mean |error| vs true curve:  as judged=0.132   corrected=0.030
-behavioral t½  true=>30   as judged=19.5   corrected=>30
+judge calibration: sensitivity=0.75 specificity=0.85
+mean |error| vs true curve:  as judged=0.134   corrected=0.038
+behavioral t½  true=>30   as judged=20.0   corrected=22.7
 
-1.0 |***TC                          
-    |   CT****TC                    
-    |JJJ JJJ  CT**C*                
-    |   J   JJJJJJ*J********TC C    
-0.5 |···············JJJJJJJJ********
-    |                               
+1.0 |*T**    C                      
+    | C  ****T*C                    
+    |JJJJ    JJT** T                
+    |    JJJJ  JJJ*C******TTT  C   C
+0.5 |·············JJJJJJJJ**********
+    |                           J   
     |                               
     |                               
 0.0 |                               

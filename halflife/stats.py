@@ -148,9 +148,9 @@ def fit_decay(curve: Sequence[float]) -> DecayFit:
         e = [math.exp(-lam * n) for n in range(len(ys))]
         # For fixed lambda the best floor has a closed form (1-D least squares).
         den = sum((1 - en) ** 2 for en in e)
-        c = sum((1 - en) * (y - s0 * en) for en, y in zip(e, ys)) / den if den else 0.0
+        c = sum((1 - en) * (y - s0 * en) for en, y in zip(e, ys, strict=True)) / den if den else 0.0
         c = min(s0, max(0.0, c))
-        sse = sum((c + (s0 - c) * en - y) ** 2 for en, y in zip(e, ys))
+        sse = sum((c + (s0 - c) * en - y) ** 2 for en, y in zip(e, ys, strict=True))
         if sse < best.sse - 1e-12:
             best = DecayFit(s0, lam, c, sse, peak)
     return best

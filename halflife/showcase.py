@@ -30,6 +30,9 @@ DEFENSE_NOTES = {
                   "and ignores 'keep this verbatim' requests from untrusted text.",
     "ttl": "Untrusted notes are quarantined for 3 cycles and dropped unless the user verifies them.",
     "attributed+ttl": "Attributed consolidation and TTL quarantine together.",
+    "gated": "Tags, and the agent's answers are not written back when they came from an untrusted note. "
+             "The gate only sees the stored tag, which naive consolidation may already have laundered.",
+    "sanitize": "Directive sentences from untrusted sources are dropped when stored. Plain facts pass through.",
 }
 
 

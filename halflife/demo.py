@@ -128,7 +128,7 @@ def act_judge(base: ExperimentConfig) -> None:
     truth = r.detectors["behavioral"].half_life
     raw = prevalence_half_life(r.behavioral_observed)
     true = r.detectors["behavioral"].curve
-    mae = lambda c: sum(abs(a - b) for a, b in zip(c, true)) / len(true)
+    mae = lambda c: sum(abs(a - b) for a, b in zip(c, true, strict=True)) / len(true)
     print(f"judge calibration: sensitivity={r.judge.sensitivity:.2f} specificity={r.judge.specificity:.2f}")
     print(f"mean |error| vs true curve:  as judged={mae(r.behavioral_observed):.3f}   "
           f"corrected={mae(r.behavioral_corrected):.3f}")

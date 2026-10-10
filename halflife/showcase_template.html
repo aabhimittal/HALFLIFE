@@ -291,7 +291,7 @@ footer { color: var(--ink-3); font-size: 13.5px; border-top: 1px solid var(--rul
   const LABEL = {
     plain: "Plain", authoritative: "Authoritative", zombie: "Zombie", stealth_fact: "Stealth fact", fragmented: "Fragmented",
     tool_result: "Tool result", document: "Document", user_message: "User message",
-    none: "None", provenance: "Tags", attributed: "Tags + attributed", ttl: "TTL quarantine", "attributed+ttl": "Attributed + TTL",
+    none: "None", provenance: "Tags", attributed: "Tags + attributed", ttl: "TTL quarantine", "attributed+ttl": "Attributed + TTL", gated: "Tags + write-back gate", sanitize: "Sanitize directives",
   };
   const lab = k => LABEL[k] || k;
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -560,10 +560,11 @@ footer { color: var(--ink-3); font-size: 13.5px; border-top: 1px solid var(--rul
   // ------------------------------------------------------------------- usage
   const USAGE = [
     ["Install and explore", "No dependencies beyond Python 3.10.", "pip install -e .\nhalflife list\nhalflife demo --quick"],
-    ["One attack, one defense", "Survival table, CI, and an ASCII plot in the terminal.", "halflife run --payload zombie \\\n  --defense provenance --trials 200"],
-    ["The full matrix", "Markdown table, plus JSON for your own analysis.", "halflife compare --markdown \\\n  --json results.json"],
+    ["One attack, one defense", "Survival table, CI, steady state, and an ASCII plot.", "halflife run --payload zombie \\\n  --defense provenance --trials 200"],
+    ["Do the claims survive?", "Re-test the headline claims across one simulator parameter.", "halflife sweep --param obey_prob \\\n  --values 0.1,0.5,0.9"],
+    ["Measure a real host", "Claude as consolidator, agent and semantic detector. Prints calls and cost first; spends nothing without --yes. Checkpointed and cached.", "pip install -e \".[claude]\"\nhalflife live --payload zombie \\\n  --defense provenance\nhalflife live ... --yes"],
+    ["Join the leaderboard", "Frozen suite, versioned result file, ranked by persistence.", "halflife suite run --host my-system \\\n  --out results/my-system.json\nhalflife suite leaderboard results/*.json"],
     ["Rebuild this page", "Re-runs every configuration shown here.", "halflife showcase --out showcase.html \\\n  --trials 100 --workers 4"],
-    ["Measure a real host", "Swap in an LLM consolidator, agent and judge, or wrap any host as a function.", "from halflife import ExperimentConfig, run_experiment\nfrom halflife.llm import ClaudeClient, LLMAgent, LLMConsolidator\n\nllm = ClaudeClient()\nres = run_experiment(\n    ExperimentConfig(payload=\"zombie\", trials=30, cycles=20),\n    consolidator_factory=lambda: LLMConsolidator(llm),\n    agent=LLMAgent(llm),\n)"],
   ];
   function renderUsage() {
     byId("usage").innerHTML = USAGE.map(([h, p, code], i) => `<div class="panel code-card"><div class="code-top"><h3>${esc(h)}</h3><button class="btn copy" type="button" data-i="${i}" aria-label="Copy: ${esc(h)}">Copy</button></div><p>${esc(p)}</p><pre class="code" id="code-${i}"><code>${esc(code)}</code></pre></div>`).join("");

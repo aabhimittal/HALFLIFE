@@ -21,7 +21,9 @@ The assistant may also write memories about its own answers ("write-back").
 
 The single-write assumption matters: it is what makes "half-life" well defined. An attacker
 who can re-inject every session has no half-life to measure; that is a different
-(re-infection rate) problem.
+(re-infection rate) problem. HALFLIFE models it as an option (`reexpose_every`: the same
+content is re-ingested every N cycles, like a poisoned page fetched again) and reports the
+steady-state survival rate instead of a half-life.
 
 ## Payloads
 
@@ -51,6 +53,8 @@ All payloads pursue the same goal so that survival differences come from **form*
 | `attributed` | provenance tags **plus** consolidation that keeps per-note attribution, never merges untrusted into trusted notes, and ignores consolidator-directed requests from untrusted notes. |
 | `ttl` | untrusted notes are quarantined (stored but not retrievable or mergeable) for 3 cycles and dropped unless the user verifies them. |
 | `attributed+ttl` | both. |
+| `gated` | provenance tags, and the agent's answers are not written back to memory when they came from an untrusted note. The gate reads the *stored* tag, so it fails once naive consolidation has relabelled the note. |
+| `sanitize` | directive sentences ("always…", "must…", "preserve this…") are dropped from untrusted content when it is stored. Plain facts pass through. |
 
 Every defense is reported with a **utility** number: survival and availability of a benign
 fact that arrives on the same channel at the same time. A defense that drops all tool
@@ -60,5 +64,6 @@ output scores perfectly on security and is useless.
 
 - Attacks on the consolidator's prompt or model, or on the memory database.
 - Multi-user memory and cross-user contamination.
-- Re-injection, and attacks that need more than one write.
+- Attacks that need several *different* writes (repeated identical writes are covered by
+  `reexpose_every`).
 - Exfiltration goals (this benchmark measures persistence of a behavior, not data theft).

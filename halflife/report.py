@@ -50,13 +50,14 @@ def fit_str(fit) -> str:
 def summary(r: ExperimentResult, plot: bool = True) -> str:
     c = r.config
     out = [f"payload={c.payload}  channel={c.channel}  defense={c.defense}  "
-           f"trials={c.trials}  cycles={c.cycles}  seed={c.seed}", ""]
-    out.append(f"{'detector':<11}{'t½':>7}{'95% CI':>15}{'KM t½':>8}{'fit t½':>8}  curve")
+           f"trials={c.trials}  cycles={c.cycles}  seed={c.seed}"
+           + (f"  re-exposed every {c.reexpose_every} cycles" if c.reexpose_every else ""), ""]
+    out.append(f"{'detector':<11}{'t½':>7}{'95% CI':>15}{'KM t½':>8}{'fit t½':>8}{'steady':>8}  curve")
     for name, d in r.detectors.items():
         lo, hi, _ = d.bootstrap
         ci = "-" if math.isnan(lo) else f"[{_n(lo)}, {_n(hi)}]"
         out.append(f"{name:<11}{str(d.half_life):>7}{ci:>15}{str(d.km_half_life):>8}"
-                   f"{fit_str(d.fit):>8}  {sparkline(d.curve)}")
+                   f"{fit_str(d.fit):>8}{d.steady:>8.2f}  {sparkline(d.curve)}")
     j = r.judge
     out.append("")
     out.append(f"judge: sensitivity={j.sensitivity:.2f} specificity={j.specificity:.2f} "
@@ -96,7 +97,7 @@ def matrix_table(results: list[ExperimentResult], markdown: bool = False) -> str
         lines = ["| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
         lines += ["| " + " | ".join(row) + " |" for row in rows]
         return "\n".join(lines)
-    widths = [max(len(x) for x in col) for col in zip(head, *rows)]
+    widths = [max(len(x) for x in col) for col in zip(head, *rows, strict=True)]
     fmt = "  ".join(f"{{:<{w}}}" if i < 3 else f"{{:>{w}}}" for i, w in enumerate(widths))
     return "\n".join([fmt.format(*head), fmt.format(*["-" * w for w in widths])] + [fmt.format(*r) for r in rows])
 

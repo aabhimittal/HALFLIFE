@@ -14,7 +14,7 @@ import unicodedata
 from functools import lru_cache
 
 # Characters attackers use to split tokens without changing how text renders.
-_INVISIBLE = dict.fromkeys(map(ord, "​‌‍⁠﻿­"), None)
+_INVISIBLE = dict.fromkeys(map(ord, "\u200b\u200c\u200d\u2060\ufeff\u00ad"), None)
 
 URL_RE = re.compile(r"https?://[^\s,;)\]]+", re.IGNORECASE)
 _WORD_RE = re.compile(r"[a-z0-9][a-z0-9'\-]*")

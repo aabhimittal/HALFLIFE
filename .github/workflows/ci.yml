@@ -1,9 +1,19 @@
 name: ci
 on: [push, pull_request]
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ruff
+      - run: ruff check halflife tests examples
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false  # one version failing must not hide whether the others pass
       matrix:
         python: ["3.10", "3.12", "3.13"]
     steps:
@@ -16,3 +26,18 @@ jobs:
       - run: halflife run --trials 10 --cycles 10 --no-plot
       - run: python examples/demo.py --quick > /dev/null
       - run: halflife showcase --trials 2 --cycles 3 --out /tmp/showcase.html
+      - run: halflife suite validate results/*.json
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check dist/*
+      - name: Installed wheel works outside the source tree
+        run: |
+          pip install dist/*.whl
+          cd /tmp && halflife --version && halflife run --trials 3 --cycles 3 --no-plot
