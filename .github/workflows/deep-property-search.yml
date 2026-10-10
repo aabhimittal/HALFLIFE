@@ -1,0 +1,24 @@
+name: deep-property-search
+# A much larger Hypothesis search than the per-push run (3,000 cases per property).
+# The example database is cached, so a failure found one night is replayed first the next.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/cache@v4
+        with:
+          path: .hypothesis
+          key: hypothesis-${{ github.run_id }}
+          restore-keys: hypothesis-
+      - run: pip install -e ".[dev]"
+      - run: pytest -q tests/test_invariants.py
+        env:
+          HYPOTHESIS_PROFILE: deep
